@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}Warehouse AI{% endblock %}</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f8f9fa;
+      }
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      .header {
+        background-color: #343a40;
+        color: white;
+        padding: 15px 0;
+      }
+      .header h1 {
+        margin: 0;
+        padding: 0 20px;
+      }
+      .nav {
+        background-color: #212529;
+        padding: 10px 0;
+      }
+      .nav a {
+        color: white;
+        text-decoration: none;
+        padding: 10px 20px;
+        display: inline-block;
+      }
+      .nav a:hover {
+        background-color: #495057;
+      }
+      .content {
+        background-color: white;
+        padding: 20px;
+        border-radius: 5px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        margin-top: 20px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      table,
+      th,
+      td {
+        border: 1px solid #dee2e6;
+      }
+      th,
+      td {
+        padding: 12px;
+        text-align: left;
+      }
+      th {
+        background-color: #e9ecef;
+      }
+      tr:nth-child(even) {
+        background-color: #f2f2f2;
+      }
+      .btn {
+        display: inline-block;
+        padding: 8px 16px;
+        background-color: #007bff;
+        color: white;
+        text-decoration: none;
+        border-radius: 4px;
+        border: none;
+        cursor: pointer;
+      }
+      .btn-danger {
+        background-color: #dc3545;
+      }
+      .btn-success {
+        background-color: #28a745;
+      }
+      .form-group {
+        margin-bottom: 15px;
+      }
+      label {
+        display: block;
+        margin-bottom: 5px;
+      }
+      input,
+      select {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        box-sizing: border-box;
+      }
+      .messages {
+        margin: 10px 0;
+        padding: 0;
+        list-style-type: none;
+      }
+      .messages .success {
+        color: #155724;
+        background-color: #d4edda;
+        border: 1px solid #c3e6cb;
+        padding: 10px;
+        border-radius: 4px;
+      }
+      .messages .error {
+        color: #721c24;
+        background-color: #f8d7da;
+        border: 1px solid #f5c6cb;
+        padding: 10px;
+        border-radius: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <h1>Warehouse AI - Pipe Inventory</h1>
+    </div>
+    <div class="nav">
+      <a href="{% url 'product_list' %}">List Product</a>
+      <a href="{% url 'product_create' %}">Add New Product</a>
+      <a href="{% url 'upload_image' %}">Scan Warehouse</a>
+      <a href="{% url 'pipe_count_history' %}">Count History</a>
+    </div>
+
+    <div class="container">
+      {% if messages %}
+      <ul class="messages">
+        {% for message in messages %}
+        <li class="{{ message.tags }}">{{ message }}</li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+
+      <div class="content">{% block content %} {% endblock %}</div>
+    </div>
+  </body>
+</html>

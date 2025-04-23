@@ -1,0 +1,16 @@
+# train: train/images
+# val: valid/images
+# test: test/images
+
+train: C:/Users/Admin/Documents/pipe-ai/train/images
+val: C:/Users/Admin/Documents/pipe-ai/valid/images
+test: C:/Users/Admin/Documents/pipe-ai/test/images
+nc: 1
+names: ["pipe"]
+
+roboflow:
+  workspace: john-tai-fa0rl
+  project: pipe-detector4
+  version: 2
+  license: CC BY 4.0
+  url: https://universe.roboflow.com/john-tai-fa0rl/pipe-detector4/dataset/2

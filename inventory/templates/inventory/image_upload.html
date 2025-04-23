@@ -1,0 +1,503 @@
+{% extends 'inventory/base.html' %} {% block title %}Quét kho hàng - Warehouse
+AI{% endblock %} {% block content %}
+<div class="upload-container">
+  <h2>Quét kho hàng bằng AI</h2>
+
+  {% if not image_processed %}
+
+  <!-- Tab navigation -->
+  <div class="tab-navigation">
+    <div class="tab active" id="tab-upload" onclick="switchTab('upload')">
+      Tải ảnh lên
+    </div>
+    <div class="tab" id="tab-camera" onclick="switchTab('camera')">
+      Sử dụng ESP32-CAM
+    </div>
+  </div>
+
+  <!-- Upload Image Tab -->
+  <div class="tab-content active" id="content-upload">
+    <p>Tải lên hình ảnh kho hàng để tự động đếm ống nước sử dụng AI.</p>
+
+    <form method="post" enctype="multipart/form-data" id="upload-form">
+      {% csrf_token %}
+      <input type="hidden" name="source" value="upload" />
+
+      <div class="form-group">
+        <label for="id_product">Chọn loại sản phẩm:</label>
+        {{ form.product }}
+      </div>
+
+      <div class="form-group">
+        <label for="id_image">Chọn hình ảnh:</label>
+        <div class="file-input-container">{{ form.image }}</div>
+      </div>
+
+      <div class="button-group">
+        <button type="submit" class="btn btn-success">
+          Tải lên và phân tích
+        </button>
+        <a href="{% url 'product_list' %}" class="btn btn-secondary">Hủy bỏ</a>
+      </div>
+    </form>
+  </div>
+
+  <!-- ESP32 Camera Tab -->
+  <div class="tab-content" id="content-camera">
+    <p>Sử dụng ESP32-CAM để nhận diện và đếm ống nước trong thời gian thực.</p>
+
+    <div class="form-group">
+      <label for="camera-product">Chọn loại sản phẩm:</label>
+      <select id="camera-product" class="form-control">
+        {% for product in all_products %}
+        <option value="{{ product.id }}">{{ product.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="esp32-ip">Địa chỉ IP ESP32-CAM:</label>
+      <div class="ip-input-container">
+        <input
+          type="text"
+          id="esp32-ip"
+          class="form-control"
+          value="172.20.10.2"
+          placeholder="Nhập IP (ví dụ: 192.168.1.100)"
+        />
+      </div>
+    </div>
+
+    <div class="camera-container">
+      <img
+        id="esp32-stream"
+        src=""
+        alt="ESP32-CAM Stream"
+        style="max-width: 100%; height: 320px; background-color: #000"
+      />
+      <div id="stream-status" class="stream-status">Đang chờ kết nối...</div>
+    </div>
+
+    <div class="button-group">
+      <button id="start-stream" class="btn btn-primary">Kết nối Camera</button>
+      <button id="capture-image" class="btn btn-success" disabled>
+        Chụp và phân tích
+      </button>
+      <button id="stop-stream" class="btn btn-secondary" disabled>
+        Ngắt kết nối
+      </button>
+    </div>
+
+    <form
+      method="post"
+      enctype="multipart/form-data"
+      id="camera-form"
+      style="display: none"
+    >
+      {% csrf_token %}
+      <input type="hidden" name="source" value="camera" />
+      <input type="hidden" name="product_id" id="hidden-product-id" />
+      <input type="hidden" name="camera_image" id="camera-image-data" />
+    </form>
+  </div>
+
+  {% endif %} {% if image_processed %}
+  <div class="result-container">
+    <h3 class="result-title">Kết quả phân tích hình ảnh</h3>
+
+    <div class="image-comparison">
+      <div class="original-image">
+        <h4>Hình ảnh gốc</h4>
+        <div class="image-frame">
+          <img src="{{ original_image }}" alt="Hình ảnh gốc" />
+        </div>
+      </div>
+
+      <div class="processed-image">
+        <h4>Hình ảnh đã phân tích</h4>
+        <div class="image-frame">
+          <img src="{{ processed_image }}" alt="Hình ảnh đã phân tích" />
+        </div>
+      </div>
+    </div>
+
+    <div class="detection-result">
+      <div class="result-info">
+        <div class="detection-count">
+          <div class="detection-label">Đã phát hiện:</div>
+          <div class="detection-value">{{ pipe_count }}</div>
+          <div class="detection-unit">ống nước</div>
+        </div>
+        <p class="database-update">
+          Số lượng sản phẩm <strong>{{ product.name }}</strong> đã được cập nhật
+          trong cơ sở dữ liệu.
+        </p>
+      </div>
+
+      <div class="result-actions">
+        <a href="{% url 'product_list' %}" class="btn btn-success"
+          >Xem danh sách sản phẩm</a
+        >
+        <a href="{% url 'upload_image' %}" class="btn btn-primary"
+          >Phân tích hình ảnh khác</a
+        >
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<style>
+  .upload-container {
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+
+  .file-input-container {
+    border: 1px solid #ddd;
+    padding: 10px;
+    border-radius: 5px;
+    background-color: #f9f9f9;
+  }
+
+  .button-group {
+    margin-top: 20px;
+    display: flex;
+    gap: 10px;
+  }
+
+  .result-container {
+    background-color: #fff;
+    border-radius: 8px;
+    padding: 20px;
+  }
+
+  .result-title {
+    text-align: center;
+    margin-bottom: 25px;
+    color: #333;
+    font-size: 24px;
+  }
+
+  .image-comparison {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin-bottom: 30px;
+  }
+
+  .original-image,
+  .processed-image {
+    flex: 1;
+    min-width: 300px;
+  }
+
+  .original-image h4,
+  .processed-image h4 {
+    text-align: center;
+    margin-bottom: 10px;
+    color: #555;
+  }
+
+  .image-frame {
+    border: 1px solid #ddd;
+    padding: 5px;
+    border-radius: 4px;
+    background-color: #f9f9f9;
+    height: 300px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  .image-frame img {
+    max-width: 100%;
+    max-height: 290px;
+    object-fit: contain;
+  }
+
+  .detection-result {
+    background-color: #f2f9f2;
+    border-radius: 8px;
+    padding: 20px;
+    margin-top: 20px;
+  }
+
+  .result-info {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+
+  .detection-count {
+    display: flex;
+    justify-content: center;
+    align-items: baseline;
+    margin-bottom: 15px;
+  }
+
+  .detection-label {
+    font-size: 20px;
+    color: #28a745;
+    margin-right: 10px;
+  }
+
+  .detection-value {
+    font-size: 36px;
+    font-weight: bold;
+    color: #28a745;
+  }
+
+  .detection-unit {
+    font-size: 20px;
+    color: #28a745;
+    margin-left: 10px;
+  }
+
+  .database-update {
+    color: #555;
+    font-size: 16px;
+  }
+
+  .result-actions {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 20px;
+  }
+
+  .btn-secondary {
+    background-color: #6c757d;
+    color: white;
+  }
+
+  .btn-primary {
+    background-color: #007bff;
+  }
+
+  /* Tab Navigation */
+  .tab-navigation {
+    display: flex;
+    border-bottom: 1px solid #ddd;
+    margin-bottom: 20px;
+  }
+
+  .tab {
+    padding: 10px 20px;
+    cursor: pointer;
+    transition: all 0.3s;
+    border: 1px solid transparent;
+    border-bottom: none;
+    border-radius: 5px 5px 0 0;
+    margin-right: 5px;
+  }
+
+  .tab:hover {
+    background-color: #f0f0f0;
+  }
+
+  .tab.active {
+    background-color: #fff;
+    border-color: #ddd;
+    border-bottom: 1px solid #fff;
+    margin-bottom: -1px;
+    font-weight: bold;
+  }
+
+  .tab-content {
+    display: none;
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-top: none;
+    border-radius: 0 0 5px 5px;
+  }
+
+  .tab-content.active {
+    display: block;
+  }
+
+  /* Camera Styles */
+  .camera-container {
+    margin: 20px 0;
+    border: 1px solid #ddd;
+    padding: 10px;
+    border-radius: 5px;
+    background-color: #f9f9f9;
+    text-align: center;
+  }
+
+  #camera-feed {
+    max-width: 100%;
+    height: 320px;
+    background-color: #000;
+    margin: 0 auto;
+  }
+
+  .form-control {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    box-sizing: border-box;
+  }
+
+  /* ESP32 Stream Styles */
+  .ip-input-container {
+    display: flex;
+    margin-bottom: 10px;
+  }
+
+  .ip-input-container .form-control {
+    flex-grow: 1;
+  }
+
+  .stream-status {
+    margin-top: 10px;
+    padding: 5px;
+    text-align: center;
+    font-weight: bold;
+  }
+
+  .stream-status.connected {
+    color: #28a745;
+  }
+
+  .stream-status.error {
+    color: #dc3545;
+  }
+
+  .stream-status.connecting {
+    color: #ffc107;
+  }
+</style>
+
+<script>
+  function switchTab(tabName) {
+    // Hide all tabs
+    document.querySelectorAll(".tab-content").forEach((tab) => {
+      tab.classList.remove("active");
+    });
+    document.querySelectorAll(".tab").forEach((tab) => {
+      tab.classList.remove("active");
+    });
+
+    // Show selected tab
+    document.getElementById("content-" + tabName).classList.add("active");
+    document.getElementById("tab-" + tabName).classList.add("active");
+  }
+
+  // ESP32-CAM functionality
+  document.addEventListener("DOMContentLoaded", function () {
+    const startStreamBtn = document.getElementById("start-stream");
+    const stopStreamBtn = document.getElementById("stop-stream");
+    const captureImageBtn = document.getElementById("capture-image");
+    const streamImg = document.getElementById("esp32-stream");
+    const streamStatus = document.getElementById("stream-status");
+    const ipInput = document.getElementById("esp32-ip");
+    const cameraForm = document.getElementById("camera-form");
+    const productSelect = document.getElementById("camera-product");
+    const hiddenProductId = document.getElementById("hidden-product-id");
+    const cameraImageData = document.getElementById("camera-image-data");
+
+    let isStreaming = false;
+    let streamURL = "";
+
+    // Start ESP32-CAM stream
+    startStreamBtn.addEventListener("click", function () {
+      const ipAddress = ipInput.value.trim();
+
+      if (!ipAddress) {
+        alert("Vui lòng nhập địa chỉ IP của ESP32-CAM");
+        return;
+      }
+
+      streamURL = `http://${ipAddress}:81/stream`;
+      streamImg.src = streamURL;
+      streamStatus.textContent = "Đang kết nối...";
+      streamStatus.className = "stream-status connecting";
+
+      // Check if stream is loading properly
+      let streamTimeout = setTimeout(() => {
+        streamStatus.textContent =
+          "Không thể kết nối đến ESP32-CAM. Vui lòng kiểm tra địa chỉ IP.";
+        streamStatus.className = "stream-status error";
+        streamImg.src = "";
+      }, 5000);
+
+      streamImg.onload = function () {
+        clearTimeout(streamTimeout);
+        isStreaming = true;
+        streamStatus.textContent = "Đã kết nối thành công";
+        streamStatus.className = "stream-status connected";
+
+        startStreamBtn.disabled = true;
+        stopStreamBtn.disabled = false;
+        captureImageBtn.disabled = false;
+      };
+
+      streamImg.onerror = function () {
+        clearTimeout(streamTimeout);
+        isStreaming = false;
+        streamStatus.textContent =
+          "Lỗi kết nối đến ESP32-CAM. Vui lòng kiểm tra địa chỉ IP.";
+        streamStatus.className = "stream-status error";
+        streamImg.src = "";
+
+        startStreamBtn.disabled = false;
+        stopStreamBtn.disabled = true;
+        captureImageBtn.disabled = true;
+      };
+    });
+
+    // Stop ESP32-CAM stream
+    stopStreamBtn.addEventListener("click", function () {
+      streamImg.src = "";
+      isStreaming = false;
+      streamStatus.textContent = "Đã ngắt kết nối";
+      streamStatus.className = "stream-status";
+
+      startStreamBtn.disabled = false;
+      stopStreamBtn.disabled = true;
+      captureImageBtn.disabled = true;
+    });
+
+    // Capture image from ESP32-CAM stream
+    captureImageBtn.addEventListener("click", function () {
+      if (!isStreaming) {
+        alert("Không có kết nối camera. Vui lòng kết nối trước.");
+        return;
+      }
+
+      try {
+        // Create a canvas element to draw the stream image
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+
+        // Set canvas size to match stream image
+        canvas.width = streamImg.naturalWidth || streamImg.width;
+        canvas.height = streamImg.naturalHeight || streamImg.height;
+
+        if (canvas.width === 0 || canvas.height === 0) {
+          throw new Error("Không thể lấy kích thước hình ảnh");
+        }
+
+        // Draw image to canvas
+        ctx.drawImage(streamImg, 0, 0, canvas.width, canvas.height);
+
+        // Get base64 image data
+        const imageDataURL = canvas.toDataURL("image/jpeg");
+
+        // Set form values
+        hiddenProductId.value = productSelect.value;
+        cameraImageData.value = imageDataURL;
+
+        // Submit form
+        cameraForm.submit();
+      } catch (err) {
+        alert("Lỗi khi chụp ảnh: " + err.message);
+        console.error("Error capturing image:", err);
+      }
+    });
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,3 @@
+@echo off
+echo Starting Django server...
+python manage.py runserver 2>&1 | findstr /v "WARNING: This is a development server."

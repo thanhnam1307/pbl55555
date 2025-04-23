@@ -1,0 +1,39 @@
+{% extends 'inventory/base.html' %} {% block title %}Water Pipe Inventory -
+Warehouse AI{% endblock %} {% block content %}
+<h2>Water Pipe Inventory</h2>
+
+{% if products %}
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Diameter (inches)</th>
+      <th>Length (feet)</th>
+      <th>Quantity</th>
+      <th>Import Date</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for product in products %}
+    <tr>
+      <td>{{ product.name }}</td>
+      <td>{{ product.diameter }}</td>
+      <td>{{ product.length }}</td>
+      <td>{{ product.quantity }}</td>
+      <td>{{ product.import_date }}</td>
+      <td>
+        <a href="{% url 'product_update' product.id %}" class="btn">Edit</a>
+        <a href="{% url 'product_delete' product.id %}" class="btn btn-danger"
+          >Delete</a
+        >
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p>
+  No products available. <a href="{% url 'product_create' %}">Add a product</a>.
+</p>
+{% endif %} {% endblock %}
