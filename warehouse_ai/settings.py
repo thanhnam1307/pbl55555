@@ -106,7 +106,9 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+#giờ việt nam   
+TIME_ZONE = 'Asia/Ho_Chi_Minh'
+
 
 USE_I18N = True
 

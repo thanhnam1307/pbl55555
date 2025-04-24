@@ -75,7 +75,7 @@ AI{% endblock %} {% block content %}
         alt="ESP32-CAM Stream"
         style="max-width: 100%; height: 320px; background-color: #000"
       />
-      <div id="stream-status" class="stream-status">Đang chờ kết nối...</div>
+      <div class="stream-status" id="stream-status">Đang chờ kết nối...</div>
     </div>
 
     <div class="button-group">
@@ -372,132 +372,112 @@ AI{% endblock %} {% block content %}
 </style>
 
 <script>
-  function switchTab(tabName) {
-    // Hide all tabs
-    document.querySelectorAll(".tab-content").forEach((tab) => {
-      tab.classList.remove("active");
-    });
-    document.querySelectorAll(".tab").forEach((tab) => {
-      tab.classList.remove("active");
-    });
+  let esp32Connected = false;
 
-    // Show selected tab
-    document.getElementById("content-" + tabName).classList.add("active");
-    document.getElementById("tab-" + tabName).classList.add("active");
-  }
-
-  // ESP32-CAM functionality
   document.addEventListener("DOMContentLoaded", function () {
-    const startStreamBtn = document.getElementById("start-stream");
-    const stopStreamBtn = document.getElementById("stop-stream");
-    const captureImageBtn = document.getElementById("capture-image");
-    const streamImg = document.getElementById("esp32-stream");
-    const streamStatus = document.getElementById("stream-status");
+    const videoElement = document.getElementById("esp32-stream");
+    const statusElement = document.getElementById("stream-status");
     const ipInput = document.getElementById("esp32-ip");
-    const cameraForm = document.getElementById("camera-form");
     const productSelect = document.getElementById("camera-product");
-    const hiddenProductId = document.getElementById("hidden-product-id");
-    const cameraImageData = document.getElementById("camera-image-data");
 
-    let isStreaming = false;
-    let streamURL = "";
+    const btnConnect = document.getElementById("start-stream");
+    const btnCapture = document.getElementById("capture-image");
+    const btnDisconnect = document.getElementById("stop-stream");
 
-    // Start ESP32-CAM stream
-    startStreamBtn.addEventListener("click", function () {
+    btnConnect.addEventListener("click", () => {
       const ipAddress = ipInput.value.trim();
+      const streamUrl = `http://${ipAddress}:81/stream`;
 
-      if (!ipAddress) {
-        alert("Vui lòng nhập địa chỉ IP của ESP32-CAM");
-        return;
-      }
+      statusElement.textContent = "Đang kết nối đến ESP32-CAM...";
+      statusElement.className = "stream-status connecting";
 
-      streamURL = `http://${ipAddress}:81/stream`;
-      streamImg.src = streamURL;
-      streamStatus.textContent = "Đang kết nối...";
-      streamStatus.className = "stream-status connecting";
+      videoElement.src = streamUrl;
 
-      // Check if stream is loading properly
-      let streamTimeout = setTimeout(() => {
-        streamStatus.textContent =
-          "Không thể kết nối đến ESP32-CAM. Vui lòng kiểm tra địa chỉ IP.";
-        streamStatus.className = "stream-status error";
-        streamImg.src = "";
-      }, 5000);
+      videoElement.onload = () => {
+        esp32Connected = true;
+        statusElement.textContent = "Đã kết nối thành công đến ESP32-CAM.";
+        statusElement.className = "stream-status connected";
 
-      streamImg.onload = function () {
-        clearTimeout(streamTimeout);
-        isStreaming = true;
-        streamStatus.textContent = "Đã kết nối thành công";
-        streamStatus.className = "stream-status connected";
-
-        startStreamBtn.disabled = true;
-        stopStreamBtn.disabled = false;
-        captureImageBtn.disabled = false;
+        btnConnect.disabled = true;
+        btnCapture.disabled = false;
+        btnDisconnect.disabled = false;
       };
 
-      streamImg.onerror = function () {
-        clearTimeout(streamTimeout);
-        isStreaming = false;
-        streamStatus.textContent =
-          "Lỗi kết nối đến ESP32-CAM. Vui lòng kiểm tra địa chỉ IP.";
-        streamStatus.className = "stream-status error";
-        streamImg.src = "";
+      videoElement.onerror = () => {
+        esp32Connected = false;
+        videoElement.src = "";
+        statusElement.textContent = "Không thể kết nối đến ESP32-CAM.";
+        statusElement.className = "stream-status error";
 
-        startStreamBtn.disabled = false;
-        stopStreamBtn.disabled = true;
-        captureImageBtn.disabled = true;
+        btnConnect.disabled = false;
+        btnCapture.disabled = true;
+        btnDisconnect.disabled = true;
       };
     });
 
-    // Stop ESP32-CAM stream
-    stopStreamBtn.addEventListener("click", function () {
-      streamImg.src = "";
-      isStreaming = false;
-      streamStatus.textContent = "Đã ngắt kết nối";
-      streamStatus.className = "stream-status";
-
-      startStreamBtn.disabled = false;
-      stopStreamBtn.disabled = true;
-      captureImageBtn.disabled = true;
-    });
-
-    // Capture image from ESP32-CAM stream
-    captureImageBtn.addEventListener("click", function () {
-      if (!isStreaming) {
-        alert("Không có kết nối camera. Vui lòng kết nối trước.");
+    btnCapture.addEventListener("click", () => {
+      // Kiểm tra đã kết nối ESP32 chưa
+      if (!esp32Connected) {
+        console.warn("ESP32 chưa kết nối!");
         return;
       }
 
-      try {
-        // Create a canvas element to draw the stream image
-        const canvas = document.createElement("canvas");
-        const ctx = canvas.getContext("2d");
-
-        // Set canvas size to match stream image
-        canvas.width = streamImg.naturalWidth || streamImg.width;
-        canvas.height = streamImg.naturalHeight || streamImg.height;
-
-        if (canvas.width === 0 || canvas.height === 0) {
-          throw new Error("Không thể lấy kích thước hình ảnh");
-        }
-
-        // Draw image to canvas
-        ctx.drawImage(streamImg, 0, 0, canvas.width, canvas.height);
-
-        // Get base64 image data
-        const imageDataURL = canvas.toDataURL("image/jpeg");
-
-        // Set form values
-        hiddenProductId.value = productSelect.value;
-        cameraImageData.value = imageDataURL;
-
-        // Submit form
-        cameraForm.submit();
-      } catch (err) {
-        alert("Lỗi khi chụp ảnh: " + err.message);
-        console.error("Error capturing image:", err);
+      // Đảm bảo video đã load xong dữ liệu
+      if (videoElement.readyState < 2) {
+        console.warn("Video chưa sẵn sàng!");
+        return;
       }
+
+      // Tạo canvas với kích thước video
+      const canvas = document.createElement("canvas");
+      canvas.width = videoElement.videoWidth || 640; // fallback nếu width = 0
+      canvas.height = videoElement.videoHeight || 480; // fallback nếu height = 0
+
+      // Vẽ frame hiện tại từ video vào canvas
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+
+      // Chuyển canvas thành base64 image
+      const imageData = canvas.toDataURL("image/jpeg");
+
+      // Kiểm tra dữ liệu base64 có hợp lệ không
+      if (!imageData || !imageData.startsWith("data:image")) {
+        console.error("Ảnh không hợp lệ hoặc canvas trống");
+        return;
+      }
+
+      // Gán dữ liệu vào form
+      document.getElementById("hidden-product-id").value = productSelect.value;
+      document.getElementById("camera-image-data").value = imageData;
+
+      // Gửi form (hoặc dùng fetch nếu bạn muốn AJAX)
+      // document.getElementById("camera-form").submit();
+      console.log("Đã chụp ảnh base64:", imageData.substring(0, 100) + "..."); // Chỉ log 100 ký tự đầu
     });
+
+    btnDisconnect.addEventListener("click", () => {
+      videoElement.src = "";
+      esp32Connected = false;
+      statusElement.textContent = "Đã ngắt kết nối.";
+      statusElement.className = "stream-status";
+
+      btnConnect.disabled = false;
+      btnCapture.disabled = true;
+      btnDisconnect.disabled = true;
+    });
+
+    // Tab switching
+    window.switchTab = function (tabName) {
+      document
+        .querySelectorAll(".tab-content")
+        .forEach((el) => el.classList.remove("active"));
+      document
+        .querySelectorAll(".tab")
+        .forEach((el) => el.classList.remove("active"));
+      document.getElementById("content-" + tabName).classList.add("active");
+      document.getElementById("tab-" + tabName).classList.add("active");
+    };
   });
 </script>
+
 {% endblock %}
