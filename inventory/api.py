@@ -277,6 +277,9 @@ def dashboard_stats_api(request):
         # Tổng số lần phát hiện
         total_detections = history_records.count()
         
+        # Số lượng loại ống khác nhau
+        pipe_types_count = Product.objects.count()
+        
         # Số lượng ống theo loại sản phẩm
         pipes_by_type = {}
         for record in history_records:
@@ -320,15 +323,27 @@ def dashboard_stats_api(request):
                     'threshold': threshold
                 })
         
+        # Lấy 5 lần phát hiện gần đây nhất
+        recent_detections = []
+        for record in history_records.order_by('-timestamp')[:5]:
+            detection_data = {
+                'id': record.id,
+                'count': record.count,
+                'timestamp': record.timestamp.strftime('%d/%m/%Y %H:%M'),
+                'product_name': record.product.name if record.product else 'Không xác định',
+                'product_id': record.product.id if record.product else None
+            }
+            recent_detections.append(detection_data)
+        
         return JsonResponse({
             'status': 'success',
-            'data': {
-                'total_pipes': total_pipes,
-                'total_detections': total_detections,
-                'pipes_by_type': pipes_by_type,
-                'daily_counts': daily_counts,
-                'low_stock_warnings': low_stock_warnings
-            }
+            'total_pipes': total_pipes,
+            'total_detections': total_detections,
+            'pipe_types': pipe_types_count,
+            'pipes_by_type': pipes_by_type,
+            'daily_counts': daily_counts,
+            'low_stock_warnings': low_stock_warnings,
+            'recent_detections': recent_detections
         })
         
     except Exception as e:

@@ -3,142 +3,821 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{% block title %}Warehouse AI{% endblock %}</title>
+    <title>{% block title %}Quản lý Ống nước XYZ{% endblock %}</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
     <style>
-      body {
-        font-family: Arial, sans-serif;
+      :root {
+        --primary-color: #0077b6;
+        --secondary-color: #0096c7;
+        --accent-color: #48cae4;
+        --bg-color: #f8f9fa;
+        --text-color: #343a40;
+        --sidebar-bg: #0077b6;
+        --sidebar-text: #f8f9fa;
+        --card-bg: #ffffff;
+        --border-color: #dee2e6;
+        --success-color: #28a745;
+        --warning-color: #ffc107;
+        --danger-color: #dc3545;
+        --info-color: #17a2b8;
+      }
+
+      [data-theme="dark"] {
+        --primary-color: #0096c7;
+        --secondary-color: #48cae4;
+        --accent-color: #90e0ef;
+        --bg-color: #121212;
+        --text-color: #f8f9fa;
+        --sidebar-bg: #00527a;
+        --sidebar-text: #e0e0e0;
+        --card-bg: #2d2d2d;
+        --border-color: #444444;
+      }
+
+      * {
         margin: 0;
         padding: 0;
-        background-color: #f8f9fa;
+        box-sizing: border-box;
       }
-      .container {
-        max-width: 1200px;
-        margin: 0 auto;
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        color: var(--text-color);
+        background-color: var(--bg-color);
+        display: flex;
+        min-height: 100vh;
+        transition: all 0.3s ease;
+      }
+
+      /* Sidebar */
+      .sidebar {
+        width: 250px;
+        background-color: var(--sidebar-bg);
+        color: var(--sidebar-text);
+        height: 100vh;
+        position: fixed;
+        transition: all 0.3s ease;
+        overflow-y: auto;
+        z-index: 1000;
+      }
+
+      .sidebar.collapsed {
+        width: 70px;
+      }
+
+      .sidebar-header {
         padding: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
       }
-      .header {
-        background-color: #343a40;
-        color: white;
-        padding: 15px 0;
+
+      .logo-container {
+        display: flex;
+        align-items: center;
       }
-      .header h1 {
-        margin: 0;
-        padding: 0 20px;
-      }
-      .nav {
-        background-color: #212529;
-        padding: 10px 0;
-      }
-      .nav a {
-        color: white;
-        text-decoration: none;
-        padding: 10px 20px;
-        display: inline-block;
-      }
-      .nav a:hover {
-        background-color: #495057;
-      }
-      .content {
+
+      .logo {
+        width: 35px;
+        height: 35px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         background-color: white;
+        border-radius: 50%;
+        margin-right: 10px;
+      }
+
+      .logo i {
+        color: var(--sidebar-bg);
+        font-size: 18px;
+      }
+
+      .sidebar-header h3 {
+        font-size: 1.2rem;
+        white-space: nowrap;
+        overflow: hidden;
+      }
+
+      .toggle-btn {
+        background: none;
+        border: none;
+        color: var(--sidebar-text);
+        cursor: pointer;
+        font-size: 1.2rem;
+      }
+
+      .sidebar-menu {
+        padding: 20px 0;
+        list-style: none;
+      }
+
+      .sidebar-menu li {
+        margin-bottom: 5px;
+      }
+
+      .sidebar-menu a {
+        padding: 10px 20px;
+        display: flex;
+        align-items: center;
+        color: var(--sidebar-text);
+        text-decoration: none;
+        transition: all 0.3s ease;
+      }
+
+      .sidebar-menu a:hover,
+      .sidebar-menu a.active {
+        background-color: rgba(255, 255, 255, 0.1);
+      }
+
+      .sidebar-menu .icon {
+        margin-right: 10px;
+        width: 20px;
+        text-align: center;
+      }
+
+      .menu-text {
+        white-space: nowrap;
+        overflow: hidden;
+      }
+
+      .sidebar.collapsed .menu-text {
+        display: none;
+      }
+
+      /* Main Content */
+      .main-content {
+        flex: 1;
+        margin-left: 250px;
+        transition: all 0.3s ease;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .main-content.expanded {
+        margin-left: 70px;
+      }
+
+      /* Top Navbar */
+      .navbar {
+        background-color: var(--card-bg);
+        padding: 15px 25px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        position: sticky;
+        top: 0;
+        z-index: 900;
+      }
+
+      .search-container {
+        position: relative;
+        width: 300px;
+      }
+
+      .search-container input {
+        width: 100%;
+        padding: 10px 15px 10px 40px;
+        border: 1px solid var(--border-color);
+        border-radius: 50px;
+        background-color: var(--bg-color);
+        color: var(--text-color);
+      }
+
+      .search-icon {
+        position: absolute;
+        left: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--text-color);
+      }
+
+      .navbar-right {
+        display: flex;
+        align-items: center;
+      }
+
+      .notification {
+        position: relative;
+        margin-right: 20px;
+        cursor: pointer;
+      }
+
+      .notification i {
+        font-size: 1.2rem;
+        color: var(--text-color);
+      }
+
+      .notification-count {
+        position: absolute;
+        top: -8px;
+        right: -8px;
+        background-color: var(--danger-color);
+        color: white;
+        width: 18px;
+        height: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        font-size: 0.7rem;
+        font-weight: bold;
+      }
+
+      .user-profile {
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        position: relative;
+      }
+
+      .avatar {
+        width: 35px;
+        height: 35px;
+        border-radius: 50%;
+        background-color: var(--primary-color);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+        margin-right: 10px;
+      }
+
+      .user-dropdown {
+        position: absolute;
+        top: 45px;
+        right: 0;
+        width: 180px;
+        background-color: var(--card-bg);
+        border-radius: 4px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        padding: 10px 0;
+        display: none;
+        z-index: 1000;
+        transition: all 0.2s ease;
+      }
+
+      .user-dropdown.show {
+        display: block;
+      }
+
+      .user-dropdown-item {
+        padding: 8px 20px;
+        display: flex;
+        align-items: center;
+        text-decoration: none;
+        color: var(--text-color);
+        transition: background-color 0.2s ease;
+      }
+
+      .user-dropdown-item:hover {
+        background-color: rgba(0, 0, 0, 0.05);
+      }
+
+      .user-dropdown-item i {
+        margin-right: 10px;
+        width: 16px;
+        text-align: center;
+      }
+
+      .user-dropdown hr {
+        margin: 5px 0;
+        border: none;
+        border-top: 1px solid var(--border-color);
+      }
+
+      .theme-toggle {
+        background: none;
+        border: none;
+        cursor: pointer;
+        margin-right: 15px;
+        color: var(--text-color);
+        font-size: 1.2rem;
+      }
+
+      /* Notifications Dropdown */
+      .notification-dropdown {
+        position: absolute;
+        top: 45px;
+        right: 0;
+        width: 300px;
+        background-color: var(--card-bg);
+        border-radius: 4px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        padding: 10px 0;
+        display: none;
+        z-index: 1000;
+        max-height: 400px;
+        overflow-y: auto;
+      }
+
+      .notification-dropdown.show {
+        display: block;
+      }
+
+      .notification-header {
+        padding: 10px 15px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid var(--border-color);
+      }
+
+      .notification-header h4 {
+        margin: 0;
+        font-size: 1rem;
+      }
+
+      .notification-item {
+        padding: 12px 15px;
+        display: flex;
+        align-items: flex-start;
+        border-bottom: 1px solid var(--border-color);
+        transition: background-color 0.2s ease;
+      }
+
+      .notification-item:hover {
+        background-color: rgba(0, 0, 0, 0.02);
+      }
+
+      .notification-item.unread {
+        background-color: rgba(0, 119, 182, 0.05);
+      }
+
+      .notification-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background-color: rgba(0, 119, 182, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 12px;
+        flex-shrink: 0;
+      }
+
+      .notification-icon i {
+        color: var(--primary-color);
+        font-size: 16px;
+      }
+
+      .notification-content {
+        flex: 1;
+      }
+
+      .notification-title {
+        font-size: 0.9rem;
+        margin-bottom: 3px;
+        color: var(--text-color);
+      }
+
+      .notification-text {
+        font-size: 0.8rem;
+        color: var(--text-color);
+        opacity: 0.8;
+        margin-bottom: 5px;
+      }
+
+      .notification-time {
+        font-size: 0.75rem;
+        color: var(--text-color);
+        opacity: 0.6;
+      }
+
+      .view-all {
+        display: block;
+        text-align: center;
+        padding: 10px;
+        color: var(--primary-color);
+        text-decoration: none;
+        font-size: 0.9rem;
+      }
+
+      .view-all:hover {
+        text-decoration: underline;
+      }
+
+      /* Content Area */
+      .content-wrapper {
+        padding: 25px;
+        flex: 1;
+      }
+
+      /* Messages */
+      .messages {
+        margin: 10px 0;
+        padding: 0;
+        list-style-type: none;
+      }
+
+      .messages .success {
+        color: var(--success-color);
+        background-color: rgba(40, 167, 69, 0.1);
+        border: 1px solid rgba(40, 167, 69, 0.2);
+        padding: 10px;
+        border-radius: 4px;
+        margin-bottom: 10px;
+      }
+
+      .messages .error {
+        color: var(--danger-color);
+        background-color: rgba(220, 53, 69, 0.1);
+        border: 1px solid rgba(220, 53, 69, 0.2);
+        padding: 10px;
+        border-radius: 4px;
+        margin-bottom: 10px;
+      }
+
+      /* Content Styling (preserving some of the existing styles) */
+      .container {
+        width: 100%;
+        padding: 0;
+      }
+
+      .content {
+        background-color: var(--card-bg);
         padding: 20px;
-        border-radius: 5px;
+        border-radius: 8px;
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         margin-top: 20px;
       }
+
       table {
         width: 100%;
         border-collapse: collapse;
       }
+
       table,
       th,
       td {
-        border: 1px solid #dee2e6;
+        border: 1px solid var(--border-color);
       }
+
       th,
       td {
         padding: 12px;
         text-align: left;
       }
+
       th {
-        background-color: #e9ecef;
+        background-color: rgba(0, 0, 0, 0.03);
       }
+
       tr:nth-child(even) {
-        background-color: #f2f2f2;
+        background-color: rgba(0, 0, 0, 0.02);
       }
+
       .btn {
         display: inline-block;
         padding: 8px 16px;
-        background-color: #007bff;
+        background-color: var(--primary-color);
         color: white;
         text-decoration: none;
         border-radius: 4px;
         border: none;
         cursor: pointer;
       }
+
       .btn-danger {
-        background-color: #dc3545;
+        background-color: var(--danger-color);
       }
+
       .btn-success {
-        background-color: #28a745;
+        background-color: var(--success-color);
       }
+
       .form-group {
         margin-bottom: 15px;
       }
+
       label {
         display: block;
         margin-bottom: 5px;
       }
+
       input,
       select {
         width: 100%;
         padding: 8px;
-        border: 1px solid #ced4da;
+        border: 1px solid var(--border-color);
         border-radius: 4px;
         box-sizing: border-box;
+        background-color: var(--bg-color);
+        color: var(--text-color);
       }
-      .messages {
-        margin: 10px 0;
-        padding: 0;
-        list-style-type: none;
-      }
-      .messages .success {
-        color: #155724;
-        background-color: #d4edda;
-        border: 1px solid #c3e6cb;
-        padding: 10px;
-        border-radius: 4px;
-      }
-      .messages .error {
-        color: #721c24;
-        background-color: #f8d7da;
-        border: 1px solid #f5c6cb;
-        padding: 10px;
-        border-radius: 4px;
+
+      @media (max-width: 768px) {
+        .sidebar {
+          width: 70px;
+        }
+
+        .sidebar .menu-text,
+        .sidebar-header h3 {
+          display: none;
+        }
+
+        .sidebar.collapsed {
+          width: 0;
+          padding: 0;
+        }
+
+        .main-content {
+          margin-left: 70px;
+        }
+
+        .main-content.expanded {
+          margin-left: 0;
+        }
       }
     </style>
   </head>
-  <body>
-    <div class="header">
-      <h1>Warehouse AI - Pipe Inventory</h1>
-    </div>
-    <div class="nav">
-      <a href="{% url 'product_list' %}">Home</a>
-      <a href="{% url 'product_create' %}">Add New Product</a>
-      <a href="{% url 'upload_image' %}">Scan Warehouse</a>
-      <a href="{% url 'pipe_count_history' %}">History</a>
-      <a href="{% url 'dashboard' %}">Dashboard</a>
-    </div>
-
-    <div class="container">
-      {% if messages %}
-      <ul class="messages">
-        {% for message in messages %}
-        <li class="{{ message.tags }}">{{ message }}</li>
-        {% endfor %}
+  <body data-theme="light">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo-container">
+          <div class="logo">
+            <i class="fas fa-tint"></i>
+          </div>
+          <h3>Quản lý Ống nước</h3>
+        </div>
+        <button class="toggle-btn" id="sidebarToggle">
+          <i class="fas fa-chevron-left"></i>
+        </button>
+      </div>
+      <ul class="sidebar-menu">
+        <li>
+          <a
+            href="{% url 'dashboard' %}"
+            class="{% if request.path == '/dashboard/' %}active{% endif %}"
+          >
+            <div class="icon"><i class="fas fa-home"></i></div>
+            <span class="menu-text">Bảng điều khiển</span>
+          </a>
+        </li>
+        <li>
+          <a
+            href="{% url 'product_list' %}"
+            class="{% if request.path == '/' %}active{% endif %}"
+          >
+            <div class="icon"><i class="fas fa-water"></i></div>
+            <span class="menu-text">Danh sách ống nước</span>
+          </a>
+        </li>
+        <li>
+          <a
+            href="{% url 'pipe_count_history' %}"
+            class="{% if request.path == '/history/' %}active{% endif %}"
+          >
+            <div class="icon"><i class="fas fa-wrench"></i></div>
+            <span class="menu-text">Bảo trì</span>
+          </a>
+        </li>
+        <li>
+          <a
+            href="#"
+            class="{% if request.path == '/reports/' %}active{% endif %}"
+          >
+            <div class="icon"><i class="fas fa-chart-bar"></i></div>
+            <span class="menu-text">Báo cáo</span>
+          </a>
+        </li>
+        <li>
+          <a
+            href="{% url 'product_create' %}"
+            class="{% if request.path == '/product/create/' %}active{% endif %}"
+          >
+            <div class="icon"><i class="fas fa-plus-circle"></i></div>
+            <span class="menu-text">Thêm mới</span>
+          </a>
+        </li>
+        <li>
+          <a
+            href="{% url 'upload_image' %}"
+            class="{% if request.path == '/upload/' %}active{% endif %}"
+          >
+            <div class="icon"><i class="fas fa-camera"></i></div>
+            <span class="menu-text">Quét kho</span>
+          </a>
+        </li>
       </ul>
-      {% endif %}
-
-      <div class="content">{% block content %} {% endblock %}</div>
     </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+      <!-- Top Navbar -->
+      <div class="navbar">
+        <div class="search-container">
+          <span class="search-icon"><i class="fas fa-search"></i></span>
+          <input
+            type="text"
+            placeholder="Tìm kiếm theo ID hoặc vị trí ống..."
+          />
+        </div>
+        <div class="navbar-right">
+          <button class="theme-toggle" id="themeToggle">
+            <i class="fas fa-moon"></i>
+          </button>
+          <div class="notification" id="notificationBtn">
+            <i class="fas fa-bell"></i>
+            <span class="notification-count">3</span>
+
+            <!-- Notification Dropdown -->
+            <div class="notification-dropdown" id="notificationDropdown">
+              <div class="notification-header">
+                <h4>Thông báo</h4>
+                <a
+                  href="#"
+                  class="mark-all-read"
+                  title="Đánh dấu tất cả là đã đọc"
+                >
+                  <i class="fas fa-check-double"></i>
+                </a>
+              </div>
+              <div class="notification-item unread">
+                <div class="notification-icon">
+                  <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div class="notification-content">
+                  <div class="notification-title">Cảnh báo tồn kho</div>
+                  <div class="notification-text">
+                    Ống PVC-U 114 sắp hết hàng (dưới 10 sản phẩm)
+                  </div>
+                  <div class="notification-time">2 giờ trước</div>
+                </div>
+              </div>
+              <div class="notification-item unread">
+                <div class="notification-icon">
+                  <i class="fas fa-sync-alt"></i>
+                </div>
+                <div class="notification-content">
+                  <div class="notification-title">Cập nhật bảo trì</div>
+                  <div class="notification-text">
+                    Đã hoàn thành bảo trì kho B - cần xác nhận
+                  </div>
+                  <div class="notification-time">Hôm qua</div>
+                </div>
+              </div>
+              <div class="notification-item unread">
+                <div class="notification-icon">
+                  <i class="fas fa-clipboard-check"></i>
+                </div>
+                <div class="notification-content">
+                  <div class="notification-title">Đơn hàng mới</div>
+                  <div class="notification-text">
+                    Đơn hàng #12345 đã được tạo và đang chờ xử lý
+                  </div>
+                  <div class="notification-time">3 ngày trước</div>
+                </div>
+              </div>
+              <a href="#" class="view-all">Xem tất cả thông báo</a>
+            </div>
+          </div>
+
+          <div class="user-profile" id="profileBtn">
+            <div class="avatar">A</div>
+            <span class="user-name">Admin</span>
+
+            <!-- User Dropdown Menu -->
+            <div class="user-dropdown" id="userDropdown">
+              <a href="#" class="user-dropdown-item">
+                <i class="fas fa-user"></i>
+                <span>Hồ sơ cá nhân</span>
+              </a>
+              <a href="#" class="user-dropdown-item">
+                <i class="fas fa-cog"></i>
+                <span>Cài đặt</span>
+              </a>
+              <hr />
+              <a href="#" class="user-dropdown-item">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Đăng xuất</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Content Wrapper -->
+      <div class="content-wrapper">
+        {% if messages %}
+        <ul class="messages">
+          {% for message in messages %}
+          <li class="{{ message.tags }}">{{ message }}</li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+
+        <div class="container">
+          <div class="content">{% block content %}{% endblock %}</div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        // Sidebar Toggle
+        const sidebarToggle = document.getElementById("sidebarToggle");
+        const sidebar = document.querySelector(".sidebar");
+        const mainContent = document.querySelector(".main-content");
+
+        if (sidebarToggle) {
+          sidebarToggle.addEventListener("click", function () {
+            sidebar.classList.toggle("collapsed");
+            mainContent.classList.toggle("expanded");
+
+            // Toggle icon
+            if (sidebar.classList.contains("collapsed")) {
+              sidebarToggle.innerHTML = '<i class="fas fa-chevron-right"></i>';
+            } else {
+              sidebarToggle.innerHTML = '<i class="fas fa-chevron-left"></i>';
+            }
+          });
+        }
+
+        // Theme toggle
+        const themeToggle = document.getElementById("themeToggle");
+        const body = document.body;
+
+        if (themeToggle) {
+          themeToggle.addEventListener("click", function () {
+            if (body.getAttribute("data-theme") === "light") {
+              body.setAttribute("data-theme", "dark");
+              themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
+            } else {
+              body.setAttribute("data-theme", "light");
+              themeToggle.innerHTML = '<i class="fas fa-moon"></i>';
+            }
+          });
+        }
+
+        // User dropdown toggle
+        const profileBtn = document.getElementById("profileBtn");
+        const userDropdown = document.getElementById("userDropdown");
+
+        if (profileBtn && userDropdown) {
+          profileBtn.addEventListener("click", function (e) {
+            e.stopPropagation();
+            userDropdown.classList.toggle("show");
+
+            // Hide notification dropdown if open
+            if (notificationDropdown.classList.contains("show")) {
+              notificationDropdown.classList.remove("show");
+            }
+          });
+        }
+
+        // Notification dropdown toggle
+        const notificationBtn = document.getElementById("notificationBtn");
+        const notificationDropdown = document.getElementById(
+          "notificationDropdown"
+        );
+
+        if (notificationBtn && notificationDropdown) {
+          notificationBtn.addEventListener("click", function (e) {
+            e.stopPropagation();
+            notificationDropdown.classList.toggle("show");
+
+            // Hide user dropdown if open
+            if (userDropdown.classList.contains("show")) {
+              userDropdown.classList.remove("show");
+            }
+          });
+        }
+
+        // Close dropdowns when clicking outside
+        document.addEventListener("click", function () {
+          if (userDropdown && userDropdown.classList.contains("show")) {
+            userDropdown.classList.remove("show");
+          }
+
+          if (
+            notificationDropdown &&
+            notificationDropdown.classList.contains("show")
+          ) {
+            notificationDropdown.classList.remove("show");
+          }
+        });
+
+        // Prevent closing when clicking inside dropdowns
+        if (userDropdown) {
+          userDropdown.addEventListener("click", function (e) {
+            e.stopPropagation();
+          });
+        }
+
+        if (notificationDropdown) {
+          notificationDropdown.addEventListener("click", function (e) {
+            e.stopPropagation();
+          });
+        }
+      });
+    </script>
   </body>
 </html>

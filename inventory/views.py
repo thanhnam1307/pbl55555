@@ -268,8 +268,29 @@ def dashboard(request):
     # Get all products for the product selection
     products = Product.objects.all()
     
+    # Calculate dashboard metrics
+    total_pipes = sum(product.quantity or 0 for product in products)
+    pipe_types = products.values('name').distinct().count()
+    
+    # Get recent inspections (history records from today)
+    from datetime import datetime, timedelta
+    today = datetime.now().date()
+    today_records = WaterPipeCountHistory.objects.filter(timestamp__date=today)
+    inspections_today = today_records.count()
+    
+    # Get products with potential issues (assuming quantity less than 5 indicates low stock)
+    incidents = products.filter(quantity__lt=5).count()
+    
+    # Get recent pipe detections (last 5)
+    recent_products = WaterPipeCountHistory.objects.all().order_by('-timestamp')[:5]
+    
     context = {
         'products': products,
+        'total_pipes': total_pipes,
+        'pipe_types': pipe_types,
+        'inspections_today': inspections_today,
+        'incidents': incidents,
+        'recent_products': recent_products,
     }
     
     return render(request, 'inventory/dashboard.html', context)
