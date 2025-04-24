@@ -16,6 +16,7 @@ from django.core.files.base import ContentFile
 sys.path.append(os.path.join(settings.BASE_DIR, 'pipe-ai'))
 
 
+
 def product_list(request):
     products = Product.objects.all()
     return render(request, 'inventory/product_list.html', {'products': products})
@@ -259,4 +260,17 @@ def pipe_count_history(request):
     }
     
     return render(request, 'inventory/pipe_count_history.html', context)
+
+def dashboard(request):
+    """
+    View to render the dashboard page with statistics and charts.
+    """
+    # Get all products for the product selection
+    products = Product.objects.all()
+    
+    context = {
+        'products': products,
+    }
+    
+    return render(request, 'inventory/dashboard.html', context)
 

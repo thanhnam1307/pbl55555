@@ -1,0 +1,381 @@
+{% extends 'inventory/base.html' %} {% block title %} Dashboard - Warehouse AI
+{%endblock %} {% block content %}
+<div class="container">
+  <h2 class="mt-4 mb-4">Dashboard</h2>
+
+  <!-- Filter Panel -->
+  <div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h5 class="mb-0">Dashboard Overview</h5>
+      <div>
+        <select id="period-filter" class="form-control">
+          <option value="all">All Time</option>
+          <option value="day">Today</option>
+          <option value="week">This Week</option>
+          <option value="month">This Month</option>
+          <option value="year">This Year</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="row mb-4">
+    <div class="col-md-4">
+      <div class="card bg-primary text-white">
+        <div class="card-body">
+          <h5 class="card-title">Total Pipes Detected</h5>
+          <h2 class="display-4" id="total-pipes">0</h2>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card bg-success text-white">
+        <div class="card-body">
+          <h5 class="card-title">Total Detections</h5>
+          <h2 class="display-4" id="total-detections">0</h2>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card bg-info text-white">
+        <div class="card-body">
+          <h5 class="card-title">Product Types</h5>
+          <h2 class="display-4" id="product-types">0</h2>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts Row -->
+  <div class="row mb-4">
+    <div class="col-md-8">
+      <div class="card">
+        <div class="card-header">
+          <h5>Daily Detection Count</h5>
+        </div>
+        <div class="card-body">
+          <canvas id="daily-chart" height="300"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card">
+        <div class="card-header">
+          <h5>Pipes by Type</h5>
+        </div>
+        <div class="card-body">
+          <canvas id="pipes-by-type-chart" height="300"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Low Stock Warnings -->
+  <div class="card mb-4">
+    <div class="card-header bg-warning">
+      <h5>Low Stock Warnings</h5>
+    </div>
+    <div class="card-body">
+      <div id="low-stock-container">
+        <p class="text-muted text-center">No low stock warnings</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Latest Detections -->
+  <div class="card">
+    <div class="card-header">
+      <h5>Latest Detections</h5>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-striped">
+          <thead>
+            <tr>
+              <th>Date & Time</th>
+              <th>Product</th>
+              <th>Count</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="latest-detections">
+            <tr>
+              <td colspan="4" class="text-center">
+                Loading latest detections...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Image Preview Modal -->
+<div
+  class="modal fade"
+  id="imagePreviewModal"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="imagePreviewModalLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="imagePreviewModalLabel">Image Preview</h5>
+        <button
+          type="button"
+          class="close"
+          data-dismiss="modal"
+          aria-label="Close"
+        >
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body text-center">
+        <img id="previewImage" src="" alt="Preview" style="max-width: 100%" />
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Include Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
+
+<script>
+  // Dashboard JavaScript
+  document.addEventListener("DOMContentLoaded", function () {
+    // Charts objects
+    let dailyChart = null;
+    let pipesByTypeChart = null;
+
+    // Fetch dashboard stats on load
+    fetchDashboardStats("all");
+
+    // Fetch latest detections
+    fetchLatestDetections();
+
+    // Event listener for period filter
+    document
+      .getElementById("period-filter")
+      .addEventListener("change", function () {
+        fetchDashboardStats(this.value);
+      });
+
+    // Function to fetch dashboard stats
+    function fetchDashboardStats(period) {
+      fetch(`/api/dashboard-stats/?period=${period}`)
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.status === "success") {
+            updateDashboardStats(data.data);
+          } else {
+            console.error("Error fetching dashboard stats:", data.message);
+          }
+        })
+        .catch((error) => {
+          console.error("Error fetching dashboard stats:", error);
+        });
+    }
+
+    // Function to fetch latest detections
+    function fetchLatestDetections() {
+      fetch("/api/history/?limit=5")
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.status === "success") {
+            updateLatestDetections(data.data);
+          } else {
+            console.error("Error fetching latest detections:", data.message);
+          }
+        })
+        .catch((error) => {
+          console.error("Error fetching latest detections:", error);
+        });
+    }
+
+    // Function to update dashboard stats
+    function updateDashboardStats(data) {
+      // Update stat cards
+      document.getElementById("total-pipes").textContent = data.total_pipes;
+      document.getElementById("total-detections").textContent =
+        data.total_detections;
+      document.getElementById("product-types").textContent = Object.keys(
+        data.pipes_by_type
+      ).length;
+
+      // Update daily chart
+      updateDailyChart(data.daily_counts);
+
+      // Update pipes by type chart
+      updatePipesByTypeChart(data.pipes_by_type);
+
+      // Update low stock warnings
+      updateLowStockWarnings(data.low_stock_warnings);
+    }
+
+    // Function to update daily chart
+    function updateDailyChart(dailyCounts) {
+      const labels = dailyCounts.map((item) => item.date);
+      const counts = dailyCounts.map((item) => item.count);
+
+      const ctx = document.getElementById("daily-chart").getContext("2d");
+
+      if (dailyChart) {
+        dailyChart.destroy();
+      }
+
+      dailyChart = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: "Pipes Detected",
+              data: counts,
+              backgroundColor: "rgba(54, 162, 235, 0.2)",
+              borderColor: "rgba(54, 162, 235, 1)",
+              borderWidth: 2,
+              tension: 0.1,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: "Count",
+              },
+            },
+            x: {
+              title: {
+                display: true,
+                text: "Date",
+              },
+            },
+          },
+        },
+      });
+    }
+
+    // Function to update pipes by type chart
+    function updatePipesByTypeChart(pipesByType) {
+      const labels = Object.keys(pipesByType);
+      const counts = Object.values(pipesByType);
+
+      const backgroundColors = [
+        "rgba(255, 99, 132, 0.7)",
+        "rgba(54, 162, 235, 0.7)",
+        "rgba(255, 206, 86, 0.7)",
+        "rgba(75, 192, 192, 0.7)",
+        "rgba(153, 102, 255, 0.7)",
+        "rgba(255, 159, 64, 0.7)",
+      ];
+
+      const ctx = document
+        .getElementById("pipes-by-type-chart")
+        .getContext("2d");
+
+      if (pipesByTypeChart) {
+        pipesByTypeChart.destroy();
+      }
+
+      pipesByTypeChart = new Chart(ctx, {
+        type: "doughnut",
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              data: counts,
+              backgroundColor: backgroundColors.slice(0, labels.length),
+              borderWidth: 1,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: "right",
+            },
+          },
+        },
+      });
+    }
+
+    // Function to update low stock warnings
+    function updateLowStockWarnings(warnings) {
+      const container = document.getElementById("low-stock-container");
+
+      if (warnings.length === 0) {
+        container.innerHTML =
+          '<p class="text-muted text-center">No low stock warnings</p>';
+        return;
+      }
+
+      let html = '<div class="list-group">';
+
+      warnings.forEach((warning) => {
+        html += `
+          <div class="list-group-item list-group-item-warning d-flex justify-content-between align-items-center">
+            <div>
+              <strong>${warning.name}</strong>
+              <small class="d-block">Current stock: ${warning.quantity}</small>
+            </div>
+            <span class="badge badge-danger">Low Stock</span>
+          </div>
+        `;
+      });
+
+      html += "</div>";
+      container.innerHTML = html;
+    }
+
+    // Function to update latest detections
+    function updateLatestDetections(detections) {
+      const container = document.getElementById("latest-detections");
+
+      if (detections.length === 0) {
+        container.innerHTML =
+          '<tr><td colspan="4" class="text-center">No detections found</td></tr>';
+        return;
+      }
+
+      let html = "";
+
+      detections.slice(0, 5).forEach((detection) => {
+        html += `
+          <tr>
+            <td>${detection.timestamp}</td>
+            <td>${detection.product ? detection.product.name : "N/A"}</td>
+            <td>${detection.count}</td>
+            <td>
+              <button 
+                class="btn btn-sm btn-primary" 
+                onclick="previewImage('${detection.processed_image}')"
+              >
+                View Image
+              </button>
+            </td>
+          </tr>
+        `;
+      });
+
+      container.innerHTML = html;
+    }
+  });
+
+  // Function to preview image in modal
+  function previewImage(imageUrl) {
+    document.getElementById("previewImage").src = imageUrl;
+    $("#imagePreviewModal").modal("show");
+  }
+</script>
+{% endblock %}
