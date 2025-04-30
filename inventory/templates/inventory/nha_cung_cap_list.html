@@ -1,0 +1,57 @@
+{% extends 'inventory/base.html' %} {% block title %}Danh sách Nhà Cung Cấp{%
+endblock %} {% block content %}
+<div class="page-header">
+  <h2>Danh sách Nhà Cung Cấp</h2>
+  <a href="{% url 'nha_cung_cap_create' %}" class="btn"
+    >Thêm Nhà Cung Cấp Mới</a
+  >
+</div>
+
+{% if nha_cung_cap_list %}
+<table>
+  <thead>
+    <tr>
+      <th>Mã NCC</th>
+      <th>Tên nhà cung cấp</th>
+      <th>Số điện thoại</th>
+      <th>Email</th>
+      <th>Địa chỉ</th>
+      <th>Thao tác</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for ncc in nha_cung_cap_list %}
+    <tr>
+      <td>{{ ncc.ma_ncc }}</td>
+      <td>{{ ncc.ten_ncc }}</td>
+      <td>{{ ncc.sdt }}</td>
+      <td>{{ ncc.email|default:"-" }}</td>
+      <td>{{ ncc.dia_chi }}</td>
+      <td>
+        <a href="#" class="btn">Sửa</a>
+        <a href="#" class="btn btn-danger">Xóa</a>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p>
+  Chưa có nhà cung cấp nào.
+  <a href="{% url 'nha_cung_cap_create' %}">Thêm nhà cung cấp mới</a>.
+</p>
+{% endif %}
+
+<style>
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+
+  .page-header h2 {
+    margin: 0;
+  }
+</style>
+{% endblock %}

@@ -416,43 +416,16 @@ AI{% endblock %} {% block content %}
     });
 
     btnCapture.addEventListener("click", () => {
-      // Kiểm tra đã kết nối ESP32 chưa
-      if (!esp32Connected) {
-        console.warn("ESP32 chưa kết nối!");
-        return;
-      }
+      const cameraContainer = document.querySelector(".camera-container");
 
-      // Đảm bảo video đã load xong dữ liệu
-      if (videoElement.readyState < 2) {
-        console.warn("Video chưa sẵn sàng!");
-        return;
-      }
-
-      // Tạo canvas với kích thước video
-      const canvas = document.createElement("canvas");
-      canvas.width = videoElement.videoWidth || 640; // fallback nếu width = 0
-      canvas.height = videoElement.videoHeight || 480; // fallback nếu height = 0
-
-      // Vẽ frame hiện tại từ video vào canvas
-      const ctx = canvas.getContext("2d");
-      ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
-
-      // Chuyển canvas thành base64 image
-      const imageData = canvas.toDataURL("image/jpeg");
-
-      // Kiểm tra dữ liệu base64 có hợp lệ không
-      if (!imageData || !imageData.startsWith("data:image")) {
-        console.error("Ảnh không hợp lệ hoặc canvas trống");
-        return;
-      }
-
-      // Gán dữ liệu vào form
-      document.getElementById("hidden-product-id").value = productSelect.value;
-      document.getElementById("camera-image-data").value = imageData;
-
-      // Gửi form (hoặc dùng fetch nếu bạn muốn AJAX)
-      // document.getElementById("camera-form").submit();
-      console.log("Đã chụp ảnh base64:", imageData.substring(0, 100) + "..."); // Chỉ log 100 ký tự đầu
+      html2canvas(cameraContainer).then((canvas) => {
+        const imageData = canvas.toDataURL("image/jpeg");
+        console.log("hi", imageData); // Log the image data for debuggin  g
+        document.getElementById("hidden-product-id").value =
+          productSelect.value;
+        document.getElementById("camera-image-data").value = imageData;
+        document.getElementById("camera-form").submit();
+      });
     });
 
     btnDisconnect.addEventListener("click", () => {

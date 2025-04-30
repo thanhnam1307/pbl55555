@@ -1,0 +1,58 @@
+{% extends 'inventory/base.html' %}{% block title %}Danh sách Phiếu Xuất
+{%endblock %}{% block content %}
+<div class="page-header">
+  <h2>Danh sách Phiếu Xuất</h2>
+  <a href="{% url 'phieu_xuat_create' %}" class="btn">Tạo Phiếu Xuất Mới</a>
+</div>
+
+{% if phieu_xuat_list %}
+<table>
+  <thead>
+    <tr>
+      <th>Mã phiếu</th>
+      <th>Khách hàng</th>
+      <th>Ngày xuất</th>
+      <th>Tổng tiền</th>
+      <th>Người tạo</th>
+      <th>Ghi chú</th>
+      <th>Thao tác</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for phieu_xuat in phieu_xuat_list %}
+    <tr>
+      <td>{{ phieu_xuat.ma_phieu_xuat }}</td>
+      <td>{{ phieu_xuat.ma_kh.ten_kh }}</td>
+      <td>{{ phieu_xuat.ngay_xuat }}</td>
+      <td>{{ phieu_xuat.tong_tien|floatformat:0 }} VNĐ</td>
+      <td>{{ phieu_xuat.nguoi_tao }}</td>
+      <td>{{ phieu_xuat.ghi_chu|default:"-" }}</td>
+      <td>
+        <a href="#" class="btn">Chi tiết</a>
+        <a href="#" class="btn">Sửa</a>
+        <a href="#" class="btn btn-danger">Xóa</a>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p>
+  Chưa có phiếu xuất nào.
+  <a href="{% url 'phieu_xuat_create' %}">Tạo phiếu xuất mới</a>.
+</p>
+{% endif %}
+
+<style>
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+
+  .page-header h2 {
+    margin: 0;
+  }
+</style>
+{% endblock %}

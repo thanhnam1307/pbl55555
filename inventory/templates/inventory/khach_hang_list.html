@@ -1,0 +1,57 @@
+{% extends 'inventory/base.html' %} {% block title %}Danh sách Khách
+Hàng{%endblock %} {% block content %}
+<div class="page-header">
+  <h2>Danh sách Khách Hàng</h2>
+  <a href="{% url 'khach_hang_create' %}" class="btn">Thêm Khách Hàng Mới</a>
+</div>
+
+{% if khach_hang_list %}
+<table>
+  <thead>
+    <tr>
+      <th>Mã KH</th>
+      <th>Tên khách hàng</th>
+      <th>Số điện thoại</th>
+      <th>Địa chỉ</th>
+      <th>Mã số thuế</th>
+      <th>Thao tác</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for kh in khach_hang_list %}
+    <tr>
+      <td>{{ kh.ma_kh }}</td>
+      <td>{{ kh.ten_kh }}</td>
+      <td>{{ kh.sdt }}</td>
+      <td>{{ kh.dia_chi }}</td>
+      <td>{{ kh.ma_so_thue|default:"-" }}</td>
+      <td>
+        <a href="{% url 'khach_hang_update' kh.ma_kh %}" class="btn">Sửa</a>
+        <a href="{% url 'khach_hang_delete' kh.ma_kh %}" class="btn btn-danger"
+          >Xóa</a
+        >
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p>
+  Chưa có khách hàng nào.
+  <a href="{% url 'khach_hang_create' %}">Thêm khách hàng mới</a>.
+</p>
+{% endif %}
+
+<style>
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+
+  .page-header h2 {
+    margin: 0;
+  }
+</style>
+{% endblock %}

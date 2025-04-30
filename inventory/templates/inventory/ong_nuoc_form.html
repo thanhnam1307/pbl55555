@@ -1,0 +1,110 @@
+{% extends 'inventory/base.html' %} {% block title %}{% if form.instance.pk
+%}Sửa{% else %}Thêm{% endif %} Ống Nước{% endblock %} {% block content %}
+<div class="form-container">
+  <h2>{% if form.instance.pk %}Sửa{% else %}Thêm{% endif %} Ống Nước</h2>
+
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+
+    <div class="form-group">
+      <label for="id_ma_loai">Loại ống:</label>
+      {{ form.ma_loai }} {% if form.ma_loai.errors %}
+      <div class="error">{{ form.ma_loai.errors }}</div>
+      {% endif %}
+    </div>
+
+    <div class="form-group">
+      <label for="id_ten_ong">Tên ống:</label>
+      {{ form.ten_ong }} {% if form.ten_ong.errors %}
+      <div class="error">{{ form.ten_ong.errors }}</div>
+      {% endif %}
+    </div>
+
+    <div class="form-group">
+      <label for="id_kich_thuoc">Kích thước:</label>
+      {{ form.kich_thuoc }} {% if form.kich_thuoc.errors %}
+      <div class="error">{{ form.kich_thuoc.errors }}</div>
+      {% endif %}
+    </div>
+
+    <div class="form-group">
+      <label for="id_chat_lieu">Chất liệu:</label>
+      {{ form.chat_lieu }} {% if form.chat_lieu.errors %}
+      <div class="error">{{ form.chat_lieu.errors }}</div>
+      {% endif %}
+    </div>
+
+    <div class="form-group">
+      <label for="id_ap_luc_toi_da">Áp lực tối đa (bar):</label>
+      {{ form.ap_luc_toi_da }} {% if form.ap_luc_toi_da.errors %}
+      <div class="error">{{ form.ap_luc_toi_da.errors }}</div>
+      {% endif %}
+    </div>
+
+    <div class="form-group">
+      <label for="id_so_met_ton">Số mét tồn:</label>
+      {{ form.so_met_ton }} {% if form.so_met_ton.errors %}
+      <div class="error">{{ form.so_met_ton.errors }}</div>
+      {% endif %}
+    </div>
+
+    <div class="form-group">
+      <label for="id_anh_minh_hoa">Ảnh minh họa:</label>
+      {{ form.anh_minh_hoa }} {% if form.anh_minh_hoa.errors %}
+      <div class="error">{{ form.anh_minh_hoa.errors }}</div>
+      {% endif %}
+    </div>
+
+    <div class="form-actions">
+      <button type="submit" class="btn">Lưu</button>
+      <a href="{% url 'ong_nuoc_list' %}" class="btn btn-secondary">Hủy</a>
+    </div>
+  </form>
+</div>
+
+<style>
+  .form-container {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  .form-group {
+    margin-bottom: 20px;
+  }
+
+  label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+  }
+
+  input,
+  textarea,
+  select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+  }
+
+  textarea {
+    height: 100px;
+  }
+
+  .error {
+    color: #dc3545;
+    font-size: 0.9em;
+    margin-top: 5px;
+  }
+
+  .form-actions {
+    margin-top: 30px;
+    display: flex;
+    gap: 10px;
+  }
+
+  .btn-secondary {
+    background-color: #6c757d;
+  }
+</style>
+{% endblock %}

@@ -570,12 +570,68 @@
             <span class="menu-text">Danh sách ống nước</span>
           </a>
         </li>
+        <!-- New sidebar items -->
+        <li>
+          <a
+            href="{% url 'loai_ong_list' %}"
+            class="{% if '/loai-ong/' in request.path %}active{% endif %}"
+          >
+            <div class="icon"><i class="fas fa-list"></i></div>
+            <span class="menu-text">Loại ống</span>
+          </a>
+        </li>
+        <li>
+          <a
+            href="{% url 'ong_nuoc_list' %}"
+            class="{% if '/ong-nuoc/' in request.path %}active{% endif %}"
+          >
+            <div class="icon"><i class="fas fa-tint"></i></div>
+            <span class="menu-text">Ống nước</span>
+          </a>
+        </li>
+        <li>
+          <a
+            href="{% url 'nha_cung_cap_list' %}"
+            class="{% if '/nha-cung-cap/' in request.path %}active{% endif %}"
+          >
+            <div class="icon"><i class="fas fa-truck"></i></div>
+            <span class="menu-text">Nhà cung cấp</span>
+          </a>
+        </li>
+        <li>
+          <a
+            href="{% url 'khach_hang_list' %}"
+            class="{% if '/khach-hang/' in request.path %}active{% endif %}"
+          >
+            <div class="icon"><i class="fas fa-users"></i></div>
+            <span class="menu-text">Khách hàng</span>
+          </a>
+        </li>
+        <li>
+          <a
+            href="{% url 'phieu_nhap_list' %}"
+            class="{% if '/phieu-nhap/' in request.path %}active{% endif %}"
+          >
+            <div class="icon"><i class="fas fa-file-import"></i></div>
+            <span class="menu-text">Phiếu nhập</span>
+          </a>
+        </li>
+        <li>
+          <a
+            href="{% url 'phieu_xuat_list' %}"
+            class="{% if '/phieu-xuat/' in request.path %}active{% endif %}"
+          >
+            <div class="icon"><i class="fas fa-file-export"></i></div>
+            <span class="menu-text">Phiếu xuất</span>
+          </a>
+        </li>
+        <!-- End of new sidebar items -->
         <li>
           <a
             href="{% url 'pipe_count_history' %}"
-            class="{% if request.path == '/history/' %}active{% endif %}"
+            class="{% if request.path == '/pipe-count-history/' %}active{% endif %}"
           >
-            <div class="icon"><i class="fas fa-wrench"></i></div>
+            <div class="icon"><i class="fas fa-history"></i></div>
             <span class="menu-text">Lịch sử</span>
           </a>
         </li>
@@ -591,7 +647,7 @@
         <li>
           <a
             href="{% url 'product_create' %}"
-            class="{% if request.path == '/product/create/' %}active{% endif %}"
+            class="{% if request.path == '/create/' %}active{% endif %}"
           >
             <div class="icon"><i class="fas fa-plus-circle"></i></div>
             <span class="menu-text">Thêm mới</span>
@@ -600,7 +656,7 @@
         <li>
           <a
             href="{% url 'upload_image' %}"
-            class="{% if request.path == '/upload/' %}active{% endif %}"
+            class="{% if request.path == '/upload-image/' %}active{% endif %}"
           >
             <div class="icon"><i class="fas fa-camera"></i></div>
             <span class="menu-text">Quét kho</span>
@@ -819,5 +875,6 @@
         }
       });
     </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   </body>
 </html>

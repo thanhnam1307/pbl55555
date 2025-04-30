@@ -1,297 +1,631 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
 from django.contrib import messages
-from .models import Product, WaterPipeCountHistory
-from .forms import ProductForm, ImageUploadForm
-import requests
-import json
-import os
-import cv2
-import numpy as np
-from django.conf import settings
-import sys
-from django.core.files.base import ContentFile
+from django.views.generic import ListView, CreateView, UpdateView, DetailView
+from django.views.generic.edit import FormMixin
+from django.urls import reverse_lazy
+from django.db.models import Q, Sum, Count
+from django.utils import timezone
+from .models import (
+    Product, WaterPipeCountHistory, 
+    LoaiOng, OngNuoc, NhaCungCap, KhachHang, 
+    PhieuNhap, PhieuXuat, PhieuNhapChiTiet, PhieuXuatChiTiet
+)
+from .forms import (
+    ProductForm, ImageUploadForm,
+    LoaiOngForm, OngNuocForm, NhaCungCapForm, KhachHangForm,
+    PhieuNhapForm, PhieuXuatForm, PhieuNhapChiTietForm, PhieuXuatChiTietForm,
+    LoaiOngSearchForm, OngNuocSearchForm, NhaCungCapSearchForm, KhachHangSearchForm,
+    PhieuNhapSearchForm, PhieuXuatSearchForm
+)
 
-# Thêm đường dẫn đến thư mục pipe-ai vào sys.path để có thể import các module từ đó
-sys.path.append(os.path.join(settings.BASE_DIR, 'pipe-ai'))
-
-
-
+# Basic Product CRUD functions
 def product_list(request):
     products = Product.objects.all()
     return render(request, 'inventory/product_list.html', {'products': products})
 
 def product_create(request):
     if request.method == 'POST':
-        form = ProductForm(request.POST)
+        form = ProductForm(request.POST, request.FILES)
         if form.is_valid():
             form.save()
+            messages.success(request, 'Sản phẩm đã được tạo thành công.')
             return redirect('product_list')
     else:
         form = ProductForm()
-    return render(request, 'inventory/product_form.html', {'form': form, 'action': 'Create'})
+    return render(request, 'inventory/product_form.html', {'form': form})
 
 def product_update(request, pk):
     product = get_object_or_404(Product, pk=pk)
     if request.method == 'POST':
-        form = ProductForm(request.POST, instance=product)
+        form = ProductForm(request.POST, request.FILES, instance=product)
         if form.is_valid():
             form.save()
+            messages.success(request, 'Sản phẩm đã được cập nhật thành công.')
             return redirect('product_list')
     else:
         form = ProductForm(instance=product)
-    return render(request, 'inventory/product_form.html', {'form': form, 'action': 'Update'})
+    return render(request, 'inventory/product_form.html', {'form': form})
 
 def product_delete(request, pk):
     product = get_object_or_404(Product, pk=pk)
     if request.method == 'POST':
         product.delete()
+        messages.success(request, 'Sản phẩm đã được xóa thành công.')
         return redirect('product_list')
     return render(request, 'inventory/product_confirm_delete.html', {'product': product})
 
 def upload_image(request):
-    context = {
-        'form': ImageUploadForm(),
-        'image_processed': False,
-        'all_products': Product.objects.all()  # Thêm danh sách sản phẩm cho tab camera
-    }
-    
     if request.method == 'POST':
+        form = ImageUploadForm(request.POST, request.FILES)
         source = request.POST.get('source', 'upload')
         
-        if source == 'upload':
-            # Xử lý tải ảnh lên như trước đây
-            form = ImageUploadForm(request.POST, request.FILES)
-            if form.is_valid():
-                product = form.cleaned_data['product']
-                image = form.cleaned_data['image']
-                
-                # Tạo đường dẫn thư mục nếu chưa tồn tại
-                warehouse_dir = os.path.join(settings.MEDIA_ROOT, 'warehouse_images')
-                if not os.path.exists(warehouse_dir):
-                    os.makedirs(warehouse_dir)
-                    
-                # Lưu hình ảnh gốc vào thư mục warehouse_images
-                image_name = image.name
-                image_path = os.path.join(settings.MEDIA_ROOT, 'warehouse_images', image_name)
-                with open(image_path, 'wb+') as destination:
-                    for chunk in image.chunks():
-                        destination.write(chunk)
-                
-                # Cập nhật đường dẫn hình ảnh trong model Product
-                product.image = f'warehouse_images/{image_name}'
-                product.save()
-        
-        elif source == 'camera':
-            # Xử lý hình ảnh từ camera
-            try:
-                product_id = request.POST.get('product_id')
-                camera_image_data = request.POST.get('camera_image')
-                
-                if not product_id or not camera_image_data:
-                    messages.error(request, 'Dữ liệu camera không hợp lệ.')
-                    return render(request, 'inventory/image_upload.html', context)
-                
-                product = Product.objects.get(id=product_id)
-                
-                # Tạo đường dẫn thư mục nếu chưa tồn tại
-                warehouse_dir = os.path.join(settings.MEDIA_ROOT, 'warehouse_images')
-                if not os.path.exists(warehouse_dir):
-                    os.makedirs(warehouse_dir)
-                
-                # Tạo tên file duy nhất cho hình ảnh camera
-                import time
-                timestamp = int(time.time())
-                image_name = f'camera_{timestamp}.jpg'
-                image_path = os.path.join(settings.MEDIA_ROOT, 'warehouse_images', image_name)
-                
-                # Lưu hình ảnh từ dữ liệu base64
-                import base64
-                image_data = camera_image_data.split(',')[1]  # Bỏ qua phần "data:image/jpeg;base64,"
-                with open(image_path, 'wb') as f:
-                    f.write(base64.b64decode(image_data))
-                
-                # Cập nhật đường dẫn hình ảnh trong model Product
-                product.image = f'warehouse_images/{image_name}'
-                product.save()
-                
-            except Product.DoesNotExist:
-                messages.error(request, 'Không tìm thấy sản phẩm.')
-                return render(request, 'inventory/image_upload.html', context)
-            except Exception as e:
-                messages.error(request, f'Lỗi khi xử lý hình ảnh từ camera: {str(e)}')
-                return render(request, 'inventory/image_upload.html', context)
-        
-        # Xử lý hình ảnh và cập nhật sản phẩm (giống nhau cho cả hai nguồn)
-        try:
-            # Phân tích hình ảnh và đếm ống nước
-            pipe_count = call_ai_pipe_counter_api(image_path)
+        # Xử lý tải ảnh từ form
+        if form.is_valid() and source == 'upload':
+            # Lấy dữ liệu từ form
+            product = form.cleaned_data['product']
+            image = form.cleaned_data['image']
             
-            # Update product quantity
-            product.quantity = pipe_count
+            # Lưu ảnh tạm thời
+            product.image = image
             product.save()
             
-            # Chuẩn bị context để hiển thị kết quả
-            context['image_processed'] = True
-            context['product'] = product
-            context['pipe_count'] = pipe_count
-            context['original_image'] = f'/media/warehouse_images/{image_name}'
-            context['processed_image'] = f'/media/processed_images/processed_{image_name}'
-            
-            # Lưu lịch sử đếm ống nước
-            history_record = WaterPipeCountHistory(
-                product=product,
-                count=pipe_count
-            )
-            
-            # Lưu hình ảnh gốc và hình ảnh đã xử lý vào bản ghi lịch sử
-            with open(image_path, 'rb') as f:
-                original_image_content = f.read()
-                history_record.original_image.save(
-                    f'history_original_{image_name}', 
-                    ContentFile(original_image_content)
-                )
-            
-            processed_image_path = os.path.join(settings.MEDIA_ROOT, 'processed_images', f'processed_{image_name}')
-            if os.path.exists(processed_image_path):
-                with open(processed_image_path, 'rb') as f:
-                    processed_image_content = f.read()
-                    history_record.processed_image.save(
-                        f'history_processed_{image_name}', 
-                        ContentFile(processed_image_content)
-                    )
-            
-            history_record.save()
-            
-            messages.success(request, f'Ảnh đã được phân tích thành công. Phát hiện {pipe_count} ống nước.')
-        except Exception as e:
-            messages.error(request, f'Lỗi khi phân tích hình ảnh: {str(e)}')
-            if source == 'upload':
-                context['form'] = form
-    
-    return render(request, 'inventory/image_upload.html', context)
-
-def call_ai_pipe_counter_api(image_path):
-    """
-    Sử dụng mô hình YOLOv8 đã huấn luyện từ thư mục pipe-ai để đếm số lượng ống nước
-    trong hình ảnh và trả về kết quả.
-    """
-    try:
-        # Cách 1: Xử lý ảnh trực tiếp (không gọi API)
-        from ultralytics import YOLO
-        
-        model_path = os.path.join(settings.BASE_DIR, 'pipe-ai', 'runs', 'detect', 'train', 'weights', 'best.pt')
-        
-        # Nếu không tìm thấy mô hình đã huấn luyện, sử dụng mô hình mặc định
-        if not os.path.exists(model_path):
-            model_path = os.path.join(settings.BASE_DIR, 'pipe-ai', 'yolov8n.pt')
-        
-        # Tải mô hình YOLO
-        model = YOLO(model_path)
-        
-        # Đọc hình ảnh bằng OpenCV
-        image = cv2.imread(image_path)
-        if image is None:
-            raise ValueError(f"Không thể đọc hình ảnh từ {image_path}")
-        
-        # Tạo một bản sao của hình ảnh gốc để vẽ lên đó
-        image_with_boxes = image.copy()
-        
-        # Sử dụng mô hình để phát hiện ống nước với tham số verbose=False để tắt các thông tin debug
-        results = model(image, verbose=False)
-        
-        # Đếm số lượng ống nước được phát hiện
-        pipe_count = 0
-        
-        for r in results:
-            boxes = r.boxes
-            pipe_count += len(boxes)
-            
-            # Vẽ hình chữ nhật bao quanh các ống nước được phát hiện
-            for box in boxes:
-                # Lấy tọa độ
-                x1, y1, x2, y2 = map(int, box.xyxy[0])
+            try:
+                # Lấy đường dẫn tương đối của ảnh để gửi đến API
+                image_path = product.image.name
                 
-                # Vẽ hình chữ nhật màu xanh lá
-                cv2.rectangle(image_with_boxes, (x1, y1), (x2, y2), (0, 255, 0), 2)
-        
-        # KHÔNG thêm bất kỳ text nào vào hình ảnh
-        
-        # Lưu hình ảnh đã xử lý
-        output_dir = os.path.join(settings.MEDIA_ROOT, 'processed_images')
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir)
+                # Gọi API để phân tích ảnh
+                import json
+                import requests
+                from django.urls import reverse
+                from urllib.parse import urljoin
+                
+                # Tạo đường dẫn đầy đủ đến API endpoint
+                api_url = request.build_absolute_uri(reverse('detect_pipes_api'))
+                
+                # Chuẩn bị dữ liệu để gửi đến API
+                api_data = {
+                    'image_path': image_path,
+                    'product_id': product.id,
+                    'note': f'Phân tích từ trang tải ảnh lên'
+                }
+                
+                # Gọi API bằng requests
+                headers = {'Content-Type': 'application/json'}
+                response = requests.post(api_url, data=json.dumps(api_data), headers=headers)
+                
+                if response.status_code == 200:
+                    result = response.json()
+                    
+                    if result['status'] == 'success':
+                        # Lấy kết quả từ API
+                        pipe_count = result['count']
+                        processed_image_path = result['processed_image']
+                        
+                        # Cập nhật số lượng sản phẩm
+                        product.quantity = pipe_count
+                        product.save()
+                        
+                        # Hiển thị kết quả
+                        return render(request, 'inventory/image_upload.html', {
+                            'image_processed': True,
+                            'product': product,
+                            'pipe_count': pipe_count,
+                            'original_image': product.image.url,
+                            'processed_image': '/media/' + processed_image_path
+                        })
+                    else:
+                        messages.error(request, f'Lỗi khi phân tích hình ảnh: {result["message"]}')
+                else:
+                    messages.error(request, f'Không thể kết nối đến API phân tích hình ảnh. Mã lỗi: {response.status_code}')
             
-        output_image_path = os.path.join(output_dir, f"processed_{os.path.basename(image_path)}")
-        cv2.imwrite(output_image_path, image_with_boxes)
+            except Exception as e:
+                messages.error(request, f'Đã xảy ra lỗi: {str(e)}')
         
-        return pipe_count
+        # Xử lý ảnh từ ESP32-CAM
+        elif source == 'camera' and 'camera_image' in request.POST:
+            try:
+                product_id = request.POST.get('product_id')
+                product = Product.objects.get(pk=product_id)
+                
+                # Xử lý dữ liệu hình ảnh base64 từ ESP32-CAM
+                import base64
+                import uuid
+                from django.core.files.base import ContentFile
+                
+                # Tách header và dữ liệu base64
+                image_data = request.POST['camera_image']
+                if ',' in image_data:
+                    header, image_data = image_data.split(',', 1)
+                
+                # Giải mã base64 thành dữ liệu nhị phân
+                binary_data = base64.b64decode(image_data)
+                
+                # Tạo tên file duy nhất
+                filename = f'camera_{int(timezone.now().timestamp())}.jpg'
+                
+                # Lưu hình ảnh và cập nhật sản phẩm
+                from django.core.files.storage import default_storage
+                from django.core.files.base import ContentFile
+                
+                image_path = f'warehouse_images/{filename}'
+                path = default_storage.save(image_path, ContentFile(binary_data))
+                
+                # Cập nhật hình ảnh cho sản phẩm
+                product.image = path
+                product.save()
+                
+                # Gọi API để phân tích ảnh
+                import json
+                import requests
+                from django.urls import reverse
+                
+                api_url = request.build_absolute_uri(reverse('detect_pipes_api'))
+                
+                api_data = {
+                    'image_path': image_path,
+                    'product_id': product.id,
+                    'note': f'Chụp từ ESP32-CAM'
+                }
+                
+                headers = {'Content-Type': 'application/json'}
+                response = requests.post(api_url, data=json.dumps(api_data), headers=headers)
+                
+                if response.status_code == 200:
+                    result = response.json()
+                    
+                    if result['status'] == 'success':
+                        pipe_count = result['count']
+                        processed_image_path = result['processed_image']
+                        
+                        # Cập nhật số lượng sản phẩm
+                        product.quantity = pipe_count
+                        product.save()
+                        
+                        # Hiển thị kết quả
+                        return render(request, 'inventory/image_upload.html', {
+                            'image_processed': True,
+                            'product': product,
+                            'pipe_count': pipe_count,
+                            'original_image': f'/media/{image_path}',
+                            'processed_image': f'/media/{processed_image_path}'
+                        })
+                    else:
+                        messages.error(request, f'Lỗi khi phân tích hình ảnh: {result["message"]}')
+                else:
+                    messages.error(request, f'Không thể kết nối đến API phân tích hình ảnh. Mã lỗi: {response.status_code}')
+                
+            except Exception as e:
+                messages.error(request, f'Đã xảy ra lỗi: {str(e)}')
+    else:
+        form = ImageUploadForm()
     
-    except Exception as e:
-        print(f"Lỗi khi phân tích hình ảnh: {str(e)}")
-        # Nếu có lỗi, sử dụng phương pháp giả lập
-        import random
-        pipe_count = random.randint(5, 20)
-        return pipe_count
+    # Truyền tất cả các sản phẩm vào context để sử dụng trong tab ESP32-CAM
+    all_products = Product.objects.all()
+    return render(request, 'inventory/image_upload.html', {'form': form, 'all_products': all_products})
 
 def pipe_count_history(request):
-    """
-    Hiển thị lịch sử đếm ống nước
-    """
-    # Lấy tham số lọc từ GET request
-    product_id = request.GET.get('product_id')
-    
-    if product_id:
-        # Lọc theo sản phẩm cụ thể
-        history_records = WaterPipeCountHistory.objects.filter(product_id=product_id)
-        selected_product = get_object_or_404(Product, id=product_id)
-    else:
-        # Hiển thị tất cả bản ghi
-        history_records = WaterPipeCountHistory.objects.all()
-        selected_product = None
-    
-    # Lấy danh sách tất cả sản phẩm để hiển thị trong dropdown
-    all_products = Product.objects.all()
-    
-    context = {
-        'history_records': history_records,
-        'all_products': all_products,
-        'selected_product': selected_product
-    }
-    
-    return render(request, 'inventory/pipe_count_history.html', context)
+    history = WaterPipeCountHistory.objects.all().order_by('-timestamp')
+    return render(request, 'inventory/pipe_count_history.html', {'history': history})
 
 def dashboard(request):
-    """
-    View to render the dashboard page with statistics and charts.
-    """
-    # Get all products for the product selection
-    products = Product.objects.all()
-    
-    # Calculate dashboard metrics
-    total_pipes = sum(product.quantity or 0 for product in products)
-    pipe_types = products.values('name').distinct().count()
-    
-    # Get recent inspections (history records from today)
-    from datetime import datetime, timedelta
-    today = datetime.now().date()
-    today_records = WaterPipeCountHistory.objects.filter(timestamp__date=today)
-    inspections_today = today_records.count()
-    
-    # Get products with potential issues (assuming quantity less than 5 indicates low stock)
-    incidents = products.filter(quantity__lt=5).count()
-    
-    # Get recent pipe detections (last 5)
-    recent_products = WaterPipeCountHistory.objects.all().order_by('-timestamp')[:5]
+    # This is the original dashboard, not the new warehouse dashboard
+    total_products = Product.objects.count()
+    recent_history = WaterPipeCountHistory.objects.order_by('-timestamp')[:5]
     
     context = {
-        'products': products,
-        'total_pipes': total_pipes,
-        'pipe_types': pipe_types,
-        'inspections_today': inspections_today,
-        'incidents': incidents,
-        'recent_products': recent_products,
+        'total_products': total_products,
+        'recent_history': recent_history
+    }
+    return render(request, 'inventory/dashboard.html', context)
+
+# Enhanced class-based views for LoaiOng with search functionality
+class LoaiOngListView(FormMixin, ListView):
+    model = LoaiOng
+    template_name = 'inventory/loai_ong_list.html'
+    context_object_name = 'loai_ong_list'
+    form_class = LoaiOngSearchForm
+    paginate_by = 10
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        form = self.get_form()
+        
+        if form.is_valid():
+            search_term = form.cleaned_data.get('search_term')
+            if search_term:
+                queryset = queryset.filter(
+                    Q(ten_loai__icontains=search_term) | 
+                    Q(mo_ta__icontains=search_term)
+                )
+        
+        return queryset
+    
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['data'] = self.request.GET or None
+        return kwargs
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['search_form'] = self.get_form()
+        return context
+
+class LoaiOngCreateView(CreateView):
+    model = LoaiOng
+    form_class = LoaiOngForm
+    template_name = 'inventory/loai_ong_form.html'
+    success_url = reverse_lazy('loai_ong_list')
+    
+    def form_valid(self, form):
+        messages.success(self.request, 'Loại ống đã được thêm thành công.')
+        return super().form_valid(form)
+
+class LoaiOngUpdateView(UpdateView):
+    model = LoaiOng
+    form_class = LoaiOngForm
+    template_name = 'inventory/loai_ong_form.html'
+    success_url = reverse_lazy('loai_ong_list')
+    
+    def form_valid(self, form):
+        messages.success(self.request, 'Loại ống đã được cập nhật thành công.')
+        return super().form_valid(form)
+
+# Enhanced class-based views for OngNuoc with search and filter
+class OngNuocListView(FormMixin, ListView):
+    model = OngNuoc
+    template_name = 'inventory/ong_nuoc_list.html'
+    context_object_name = 'ong_nuoc_list'
+    form_class = OngNuocSearchForm
+    paginate_by = 10
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        form = self.get_form()
+        
+        if form.is_valid():
+            search_term = form.cleaned_data.get('search_term')
+            loai_ong = form.cleaned_data.get('loai_ong')
+            
+            if search_term:
+                queryset = queryset.filter(
+                    Q(ten_ong__icontains=search_term) | 
+                    Q(kich_thuoc__icontains=search_term) |
+                    Q(chat_lieu__icontains=search_term)
+                )
+            
+            if loai_ong:
+                queryset = queryset.filter(ma_loai=loai_ong)
+        
+        return queryset
+    
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['data'] = self.request.GET or None
+        return kwargs
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['search_form'] = self.get_form()
+        return context
+
+class OngNuocCreateView(CreateView):
+    model = OngNuoc
+    form_class = OngNuocForm
+    template_name = 'inventory/ong_nuoc_form.html'
+    success_url = reverse_lazy('ong_nuoc_list')
+    
+    def form_valid(self, form):
+        messages.success(self.request, 'Ống nước đã được thêm thành công.')
+        return super().form_valid(form)
+
+class OngNuocUpdateView(UpdateView):
+    model = OngNuoc
+    form_class = OngNuocForm
+    template_name = 'inventory/ong_nuoc_form.html'
+    success_url = reverse_lazy('ong_nuoc_list')
+    
+    def form_valid(self, form):
+        messages.success(self.request, 'Ống nước đã được cập nhật thành công.')
+        return super().form_valid(form)
+
+class OngNuocDetailView(DetailView):
+    model = OngNuoc
+    template_name = 'inventory/ong_nuoc_detail.html'
+    context_object_name = 'ong_nuoc'
+
+# Enhanced class-based views for NhaCungCap
+class NhaCungCapListView(FormMixin, ListView):
+    model = NhaCungCap
+    template_name = 'inventory/nha_cung_cap_list.html'
+    context_object_name = 'nha_cung_cap_list'
+    form_class = NhaCungCapSearchForm
+    paginate_by = 10
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        form = self.get_form()
+        
+        if form.is_valid():
+            search_term = form.cleaned_data.get('search_term')
+            if search_term:
+                queryset = queryset.filter(
+                    Q(ten_ncc__icontains=search_term) | 
+                    Q(sdt__icontains=search_term) |
+                    Q(email__icontains=search_term)
+                )
+        
+        return queryset
+    
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['data'] = self.request.GET or None
+        return kwargs
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['search_form'] = self.get_form()
+        return context
+
+class NhaCungCapCreateView(CreateView):
+    model = NhaCungCap
+    form_class = NhaCungCapForm
+    template_name = 'inventory/nha_cung_cap_form.html'
+    success_url = reverse_lazy('nha_cung_cap_list')
+    
+    def form_valid(self, form):
+        messages.success(self.request, 'Nhà cung cấp đã được thêm thành công.')
+        return super().form_valid(form)
+
+class NhaCungCapUpdateView(UpdateView):
+    model = NhaCungCap
+    form_class = NhaCungCapForm
+    template_name = 'inventory/nha_cung_cap_form.html'
+    success_url = reverse_lazy('nha_cung_cap_list')
+    
+    def form_valid(self, form):
+        messages.success(self.request, 'Nhà cung cấp đã được cập nhật thành công.')
+        return super().form_valid(form)
+
+# Enhanced class-based views for KhachHang
+class KhachHangListView(FormMixin, ListView):
+    model = KhachHang
+    template_name = 'inventory/khach_hang_list.html'
+    context_object_name = 'khach_hang_list'
+    form_class = KhachHangSearchForm
+    paginate_by = 10
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        form = self.get_form()
+        
+        if form.is_valid():
+            search_term = form.cleaned_data.get('search_term')
+            if search_term:
+                queryset = queryset.filter(
+                    Q(ten_kh__icontains=search_term) | 
+                    Q(sdt__icontains=search_term) |
+                    Q(ma_so_thue__icontains=search_term)
+                )
+        
+        return queryset
+    
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['data'] = self.request.GET or None
+        return kwargs
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['search_form'] = self.get_form()
+        return context
+
+class KhachHangCreateView(CreateView):
+    model = KhachHang
+    form_class = KhachHangForm
+    template_name = 'inventory/khach_hang_form.html'
+    success_url = reverse_lazy('khach_hang_list')
+    
+    def form_valid(self, form):
+        messages.success(self.request, 'Khách hàng đã được thêm thành công.')
+        return super().form_valid(form)
+
+class KhachHangUpdateView(UpdateView):
+    model = KhachHang
+    form_class = KhachHangForm
+    template_name = 'inventory/khach_hang_form.html'
+    success_url = reverse_lazy('khach_hang_list')
+    
+    def form_valid(self, form):
+        messages.success(self.request, 'Khách hàng đã được cập nhật thành công.')
+        return super().form_valid(form)
+
+# Enhanced class-based views for PhieuNhap
+class PhieuNhapListView(FormMixin, ListView):
+    model = PhieuNhap
+    template_name = 'inventory/phieu_nhap_list.html'
+    context_object_name = 'phieu_nhap_list'
+    form_class = PhieuNhapSearchForm
+    paginate_by = 10
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        form = self.get_form()
+        
+        if form.is_valid():
+            search_term = form.cleaned_data.get('search_term')
+            from_date = form.cleaned_data.get('from_date')
+            to_date = form.cleaned_data.get('to_date')
+            nha_cung_cap = form.cleaned_data.get('nha_cung_cap')
+            
+            if search_term:
+                queryset = queryset.filter(
+                    Q(nguoi_tao__icontains=search_term) | 
+                    Q(ghi_chu__icontains=search_term)
+                )
+            
+            if from_date:
+                queryset = queryset.filter(ngay_nhap__gte=from_date)
+            
+            if to_date:
+                queryset = queryset.filter(ngay_nhap__lte=to_date)
+            
+            if nha_cung_cap:
+                queryset = queryset.filter(ma_ncc=nha_cung_cap)
+        
+        return queryset.order_by('-ngay_nhap')
+    
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['data'] = self.request.GET or None
+        return kwargs
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['search_form'] = self.get_form()
+        return context
+
+class PhieuNhapCreateView(CreateView):
+    model = PhieuNhap
+    form_class = PhieuNhapForm
+    template_name = 'inventory/phieu_nhap_form.html'
+    success_url = reverse_lazy('phieu_nhap_list')
+    
+    def form_valid(self, form):
+        messages.success(self.request, 'Phiếu nhập đã được tạo thành công.')
+        return super().form_valid(form)
+
+class PhieuNhapUpdateView(UpdateView):
+    model = PhieuNhap
+    form_class = PhieuNhapForm
+    template_name = 'inventory/phieu_nhap_form.html'
+    success_url = reverse_lazy('phieu_nhap_list')
+    
+    def form_valid(self, form):
+        messages.success(self.request, 'Phiếu nhập đã được cập nhật thành công.')
+        return super().form_valid(form)
+
+class PhieuNhapDetailView(DetailView):
+    model = PhieuNhap
+    template_name = 'inventory/phieu_nhap_detail.html'
+    context_object_name = 'phieu_nhap'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['chi_tiet_list'] = PhieuNhapChiTiet.objects.filter(ma_phieu_nhap=self.object)
+        return context
+
+# Enhanced class-based views for PhieuXuat
+class PhieuXuatListView(FormMixin, ListView):
+    model = PhieuXuat
+    template_name = 'inventory/phieu_xuat_list.html'
+    context_object_name = 'phieu_xuat_list'
+    form_class = PhieuXuatSearchForm
+    paginate_by = 10
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        form = self.get_form()
+        
+        if form.is_valid():
+            search_term = form.cleaned_data.get('search_term')
+            from_date = form.cleaned_data.get('from_date')
+            to_date = form.cleaned_data.get('to_date')
+            khach_hang = form.cleaned_data.get('khach_hang')
+            
+            if search_term:
+                queryset = queryset.filter(
+                    Q(nguoi_tao__icontains=search_term) | 
+                    Q(ghi_chu__icontains=search_term)
+                )
+            
+            if from_date:
+                queryset = queryset.filter(ngay_xuat__gte=from_date)
+            
+            if to_date:
+                queryset = queryset.filter(ngay_xuat__lte=to_date)
+            
+            if khach_hang:
+                queryset = queryset.filter(ma_kh=khach_hang)
+        
+        return queryset.order_by('-ngay_xuat')
+    
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['data'] = self.request.GET or None
+        return kwargs
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['search_form'] = self.get_form()
+        return context
+
+class PhieuXuatCreateView(CreateView):
+    model = PhieuXuat
+    form_class = PhieuXuatForm
+    template_name = 'inventory/phieu_xuat_form.html'
+    success_url = reverse_lazy('phieu_xuat_list')
+    
+    def form_valid(self, form):
+        messages.success(self.request, 'Phiếu xuất đã được tạo thành công.')
+        return super().form_valid(form)
+
+class PhieuXuatUpdateView(UpdateView):
+    model = PhieuXuat
+    form_class = PhieuXuatForm
+    template_name = 'inventory/phieu_xuat_form.html'
+    success_url = reverse_lazy('phieu_xuat_list')
+    
+    def form_valid(self, form):
+        messages.success(self.request, 'Phiếu xuất đã được cập nhật thành công.')
+        return super().form_valid(form)
+
+class PhieuXuatDetailView(DetailView):
+    model = PhieuXuat
+    template_name = 'inventory/phieu_xuat_detail.html'
+    context_object_name = 'phieu_xuat'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['chi_tiet_list'] = PhieuXuatChiTiet.objects.filter(ma_phieu_xuat=self.object)
+        return context
+
+# New enhanced dashboard
+def warehouse_dashboard(request):
+    # Get overall statistics
+    total_ong_nuoc = OngNuoc.objects.count()
+    total_loai_ong = LoaiOng.objects.count()
+    total_nha_cung_cap = NhaCungCap.objects.count()
+    total_khach_hang = KhachHang.objects.count()
+    
+    # Get recent activity
+    recent_phieu_nhap = PhieuNhap.objects.order_by('-ngay_nhap')[:5]
+    recent_phieu_xuat = PhieuXuat.objects.order_by('-ngay_xuat')[:5]
+    
+    # Calculate inventory stats
+    ong_nuoc_inventory = OngNuoc.objects.aggregate(
+        total_inventory=Sum('so_met_ton')
+    )
+    
+    # Get low stock items (less than 10m)
+    low_stock_items = OngNuoc.objects.filter(so_met_ton__lt=10).order_by('so_met_ton')
+    
+    # Get inventory by type
+    inventory_by_type = OngNuoc.objects.values('ma_loai__ten_loai').annotate(
+        total=Sum('so_met_ton')
+    ).order_by('-total')
+    
+    context = {
+        'total_ong_nuoc': total_ong_nuoc,
+        'total_loai_ong': total_loai_ong,
+        'total_nha_cung_cap': total_nha_cung_cap,
+        'total_khach_hang': total_khach_hang,
+        'recent_phieu_nhap': recent_phieu_nhap,
+        'recent_phieu_xuat': recent_phieu_xuat,
+        'total_inventory': ong_nuoc_inventory.get('total_inventory', 0),
+        'low_stock_items': low_stock_items,
+        'inventory_by_type': inventory_by_type,
     }
     
-    return render(request, 'inventory/dashboard.html', context)
+    return render(request, 'inventory/warehouse_dashboard.html', context)
 

@@ -1,0 +1,461 @@
+{% extends 'inventory/base.html' %} {% block title %}Chi Tiết Ống Nước: {{
+ong_nuoc.ten_ong }}{% endblock %} {% block content %}
+<div class="detail-container">
+  <div class="detail-header">
+    <h2>Chi Tiết Ống Nước</h2>
+    <div class="detail-actions">
+      <a href="{% url 'ong_nuoc_update' ong_nuoc.ma_ong %}" class="btn">Sửa</a>
+      <a href="{% url 'ong_nuoc_list' %}" class="btn btn-secondary">Quay lại</a>
+    </div>
+  </div>
+
+  <div class="detail-content">
+    <div class="detail-primary">
+      <div class="detail-image">
+        {% if ong_nuoc.anh_minh_hoa %}
+        <img
+          src="{{ ong_nuoc.anh_minh_hoa.url }}"
+          alt="{{ ong_nuoc.ten_ong }}"
+        />
+        {% else %}
+        <div class="no-image">
+          <i class="fas fa-tint"></i>
+          <p>Không có ảnh</p>
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="detail-info">
+        <h3>{{ ong_nuoc.ten_ong }}</h3>
+        <div class="detail-item">
+          <span class="detail-label">Loại ống:</span>
+          <span class="detail-value">{{ ong_nuoc.ma_loai.ten_loai }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Kích thước:</span>
+          <span class="detail-value">{{ ong_nuoc.kich_thuoc }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Chất liệu:</span>
+          <span class="detail-value">{{ ong_nuoc.chat_lieu }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Áp lực tối đa:</span>
+          <span class="detail-value">{{ ong_nuoc.ap_luc_toi_da }} bar</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Số mét tồn kho:</span>
+          <span class="detail-value highlight"
+            >{{ ong_nuoc.so_met_ton }} {{ ong_nuoc.ma_loai.don_vi_tinh }}</span
+          >
+        </div>
+      </div>
+    </div>
+
+    <div class="detail-tabs">
+      <div class="tabs">
+        <button class="tab-button active" data-tab="history">Lịch sử</button>
+        <button class="tab-button" data-tab="stock">Tồn kho</button>
+      </div>
+
+      <div class="tab-content" id="history-tab">
+        <h4>Lịch sử giao dịch</h4>
+
+        <div class="transaction-history">
+          <div class="history-section">
+            <h5>Nhập kho</h5>
+            {% with nhap_items=ong_nuoc.phieu_nhap_chi_tiet.all %} {% if
+            nhap_items %}
+            <table>
+              <thead>
+                <tr>
+                  <th>Mã phiếu</th>
+                  <th>Ngày nhập</th>
+                  <th>Số lượng</th>
+                  <th>Đơn giá</th>
+                  <th>Nhà cung cấp</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in nhap_items %}
+                <tr>
+                  <td>
+                    <a
+                      href="{% url 'phieu_nhap_detail' item.ma_phieu_nhap.ma_phieu_nhap %}"
+                      >{{ item.ma_phieu_nhap.ma_phieu_nhap }}</a
+                    >
+                  </td>
+                  <td>{{ item.ma_phieu_nhap.ngay_nhap }}</td>
+                  <td>{{ item.so_luong }}</td>
+                  <td>{{ item.don_gia|floatformat:0 }} VNĐ</td>
+                  <td>{{ item.ma_phieu_nhap.ma_ncc.ten_ncc }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            {% else %}
+            <p class="no-data">Chưa có dữ liệu nhập kho.</p>
+            {% endif %} {% endwith %}
+          </div>
+
+          <div class="history-section">
+            <h5>Xuất kho</h5>
+            {% with xuat_items=ong_nuoc.phieu_xuat_chi_tiet.all %} {% if
+            xuat_items %}
+            <table>
+              <thead>
+                <tr>
+                  <th>Mã phiếu</th>
+                  <th>Ngày xuất</th>
+                  <th>Số lượng</th>
+                  <th>Đơn giá</th>
+                  <th>Khách hàng</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in xuat_items %}
+                <tr>
+                  <td>
+                    <a
+                      href="{% url 'phieu_xuat_detail' item.ma_phieu_xuat.ma_phieu_xuat %}"
+                      >{{ item.ma_phieu_xuat.ma_phieu_xuat }}</a
+                    >
+                  </td>
+                  <td>{{ item.ma_phieu_xuat.ngay_xuat }}</td>
+                  <td>{{ item.so_luong }}</td>
+                  <td>{{ item.don_gia|floatformat:0 }} VNĐ</td>
+                  <td>{{ item.ma_phieu_xuat.ma_kh.ten_kh }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            {% else %}
+            <p class="no-data">Chưa có dữ liệu xuất kho.</p>
+            {% endif %} {% endwith %}
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-content hidden" id="stock-tab">
+        <h4>Thông tin tồn kho</h4>
+
+        <div class="stock-info">
+          <div class="stock-chart">
+            <div class="stock-level">
+              <div
+                class="level-indicator"
+                style="height: {{ ong_nuoc.so_met_ton }}%"
+              >
+                {% if ong_nuoc.so_met_ton < 10 %}
+                <div class="level-warning">Cảnh báo: Tồn kho thấp</div>
+                {% endif %}
+              </div>
+            </div>
+            <div class="stock-labels">
+              <span
+                >{{ ong_nuoc.so_met_ton }} {{ ong_nuoc.ma_loai.don_vi_tinh
+                }}</span
+              >
+            </div>
+          </div>
+
+          <div class="stock-details">
+            <div class="stock-detail-item">
+              <span class="detail-label">Trạng thái:</span>
+              <span
+                class="detail-value stock-status {% if ong_nuoc.so_met_ton < 5 %}critical {% elif ong_nuoc.so_met_ton < 10 %}warning {% else %}good{% endif %}"
+              >
+                {% if ong_nuoc.so_met_ton < 5 %}Cần nhập thêm gấp {% elif
+                ong_nuoc.so_met_ton < 10 %}Tồn kho thấp {% else %}Đủ hàng{%
+                endif %}
+              </span>
+            </div>
+            <div class="stock-detail-item">
+              <span class="detail-label">Loại ống:</span>
+              <span class="detail-value">{{ ong_nuoc.ma_loai.ten_loai }}</span>
+            </div>
+            <div class="stock-detail-item">
+              <span class="detail-label">Đơn vị tính:</span>
+              <span class="detail-value"
+                >{{ ong_nuoc.ma_loai.don_vi_tinh }}</span
+              >
+            </div>
+            <div class="stock-detail-item">
+              <span class="detail-label">Số lượng tồn:</span>
+              <span class="detail-value">{{ ong_nuoc.so_met_ton }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .detail-container {
+    padding: 0 15px;
+  }
+
+  .detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+
+  .detail-actions {
+    display: flex;
+    gap: 10px;
+  }
+
+  .detail-content {
+    background-color: var(--card-bg);
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+  }
+
+  .detail-primary {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    padding: 20px;
+    gap: 20px;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .detail-image {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 200px;
+    background-color: rgba(0, 0, 0, 0.02);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .detail-image img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+  }
+
+  .no-image {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #6c757d;
+  }
+
+  .no-image i {
+    font-size: 48px;
+    margin-bottom: 10px;
+  }
+
+  .detail-info h3 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 24px;
+  }
+
+  .detail-item {
+    margin-bottom: 10px;
+    display: flex;
+  }
+
+  .detail-label {
+    width: 40%;
+    font-weight: bold;
+    color: #6c757d;
+  }
+
+  .detail-value {
+    width: 60%;
+  }
+
+  .detail-value.highlight {
+    font-weight: bold;
+    color: var(--primary-color);
+  }
+
+  .detail-tabs {
+    padding: 20px;
+  }
+
+  .tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 20px;
+  }
+
+  .tab-button {
+    padding: 10px 20px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    position: relative;
+    color: #6c757d;
+    font-weight: 500;
+  }
+
+  .tab-button.active {
+    color: var(--primary-color);
+  }
+
+  .tab-button.active::after {
+    content: "";
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background-color: var(--primary-color);
+  }
+
+  .tab-content {
+    display: block;
+  }
+
+  .tab-content.hidden {
+    display: none;
+  }
+
+  .transaction-history {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .history-section h5 {
+    margin-top: 0;
+    margin-bottom: 10px;
+  }
+
+  .stock-info {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 20px;
+  }
+
+  .stock-chart {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .stock-level {
+    height: 200px;
+    width: 60px;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+    border: 1px solid #dee2e6;
+  }
+
+  .level-indicator {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    background-color: var(--primary-color);
+    max-height: 100%;
+    min-height: 5px;
+    transition: height 0.5s;
+  }
+
+  .level-warning {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-90deg);
+    white-space: nowrap;
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+    text-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
+  }
+
+  .stock-labels {
+    margin-top: 10px;
+    text-align: center;
+    font-weight: bold;
+  }
+
+  .stock-details {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .stock-detail-item {
+    display: flex;
+    align-items: center;
+  }
+
+  .stock-status {
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: bold;
+  }
+
+  .stock-status.good {
+    background-color: #28a745;
+    color: white;
+  }
+
+  .stock-status.warning {
+    background-color: #ffc107;
+    color: #212529;
+  }
+
+  .stock-status.critical {
+    background-color: #dc3545;
+    color: white;
+  }
+
+  .no-data {
+    text-align: center;
+    padding: 20px;
+    color: #6c757d;
+    background-color: rgba(0, 0, 0, 0.02);
+    border-radius: 4px;
+  }
+
+  @media (max-width: 768px) {
+    .detail-primary {
+      grid-template-columns: 1fr;
+    }
+
+    .stock-info {
+      grid-template-columns: 1fr;
+    }
+
+    .stock-chart {
+      margin-bottom: 20px;
+    }
+  }
+</style>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const tabButtons = document.querySelectorAll(".tab-button");
+    const tabContents = document.querySelectorAll(".tab-content");
+
+    tabButtons.forEach((button) => {
+      button.addEventListener("click", function () {
+        // Remove active class from all buttons
+        tabButtons.forEach((btn) => btn.classList.remove("active"));
+        // Add active class to clicked button
+        this.classList.add("active");
+
+        // Hide all tab contents
+        tabContents.forEach((content) => content.classList.add("hidden"));
+        // Show the selected tab content
+        const tabId = this.getAttribute("data-tab");
+        document.getElementById(`${tabId}-tab`).classList.remove("hidden");
+      });
+    });
+  });
+</script>
+{% endblock %}

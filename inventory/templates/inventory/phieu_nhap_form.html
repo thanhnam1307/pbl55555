@@ -1,0 +1,96 @@
+{% extends 'inventory/base.html' %} {% block title %}{% if form.instance.pk
+%}Sửa{% else %}Tạo{% endif %} Phiếu Nhập{% endblock %} {% block content %}
+<div class="form-container">
+  <h2>{% if form.instance.pk %}Sửa{% else %}Tạo{% endif %} Phiếu Nhập</h2>
+
+  <form method="post">
+    {% csrf_token %}
+
+    <div class="form-group">
+      <label for="id_ma_ncc">Nhà cung cấp:</label>
+      {{ form.ma_ncc }} {% if form.ma_ncc.errors %}
+      <div class="error">{{ form.ma_ncc.errors }}</div>
+      {% endif %}
+    </div>
+
+    <div class="form-group">
+      <label for="id_ngay_nhap">Ngày nhập:</label>
+      {{ form.ngay_nhap }} {% if form.ngay_nhap.errors %}
+      <div class="error">{{ form.ngay_nhap.errors }}</div>
+      {% endif %}
+    </div>
+
+    <div class="form-group">
+      <label for="id_tong_tien">Tổng tiền:</label>
+      {{ form.tong_tien }} {% if form.tong_tien.errors %}
+      <div class="error">{{ form.tong_tien.errors }}</div>
+      {% endif %}
+    </div>
+
+    <div class="form-group">
+      <label for="id_nguoi_tao">Người tạo:</label>
+      {{ form.nguoi_tao }} {% if form.nguoi_tao.errors %}
+      <div class="error">{{ form.nguoi_tao.errors }}</div>
+      {% endif %}
+    </div>
+
+    <div class="form-group">
+      <label for="id_ghi_chu">Ghi chú:</label>
+      {{ form.ghi_chu }} {% if form.ghi_chu.errors %}
+      <div class="error">{{ form.ghi_chu.errors }}</div>
+      {% endif %}
+    </div>
+
+    <div class="form-actions">
+      <button type="submit" class="btn">Lưu</button>
+      <a href="{% url 'phieu_nhap_list' %}" class="btn btn-secondary">Hủy</a>
+    </div>
+  </form>
+</div>
+
+<style>
+  .form-container {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  .form-group {
+    margin-bottom: 20px;
+  }
+
+  label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+  }
+
+  input,
+  textarea,
+  select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+  }
+
+  textarea {
+    height: 100px;
+  }
+
+  .error {
+    color: #dc3545;
+    font-size: 0.9em;
+    margin-top: 5px;
+  }
+
+  .form-actions {
+    margin-top: 30px;
+    display: flex;
+    gap: 10px;
+  }
+
+  .btn-secondary {
+    background-color: #6c757d;
+  }
+</style>
+{% endblock %}

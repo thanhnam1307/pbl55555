@@ -1,0 +1,55 @@
+{% extends 'inventory/base.html' %} {% block title %} Danh sách Loại Ống
+{%endblock %} {% block content %}
+<div class="page-header">
+  <h2>Danh sách Loại Ống</h2>
+  <a href="{% url 'loai_ong_create' %}" class="btn">Thêm Loại Ống Mới</a>
+</div>
+
+{% if loai_ong_list %}
+<table>
+  <thead>
+    <tr>
+      <th>Mã loại</th>
+      <th>Tên loại</th>
+      <th>Mô tả</th>
+      <th>Đơn vị tính</th>
+      <th>Thao tác</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for loai_ong in loai_ong_list %}
+    <tr>
+      <td>{{ loai_ong.ma_loai }}</td>
+      <td>{{ loai_ong.ten_loai }}</td>
+      <td>{{ loai_ong.mo_ta|default:"-" }}</td>
+      <td>{{ loai_ong.don_vi_tinh }}</td>
+      <td>
+        <a href="{% url 'loai_ong_update' loai_ong.ma_loai %}" class="btn"
+          >Sửa</a
+        >
+        <a href="#" class="btn btn-danger">Xóa</a>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p>
+  Chưa có loại ống nào.
+  <a href="{% url 'loai_ong_create' %}">Thêm loại ống mới</a>.
+</p>
+{% endif %}
+
+<style>
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+
+  .page-header h2 {
+    margin: 0;
+  }
+</style>
+{% endblock %}

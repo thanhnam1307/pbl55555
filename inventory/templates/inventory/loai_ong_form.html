@@ -1,0 +1,82 @@
+{% extends 'inventory/base.html' %} {% block title %}{% if form.instance.pk
+%}Sửa{% else %}Thêm{% endif %} Loại Ống{% endblock %} {% block content %}
+<div class="form-container">
+  <h2>{% if form.instance.pk %}Sửa{% else %}Thêm{% endif %} Loại Ống</h2>
+
+  <form method="post">
+    {% csrf_token %}
+
+    <div class="form-group">
+      <label for="id_ten_loai">Tên loại:</label>
+      {{ form.ten_loai }} {% if form.ten_loai.errors %}
+      <div class="error">{{ form.ten_loai.errors }}</div>
+      {% endif %}
+    </div>
+
+    <div class="form-group">
+      <label for="id_mo_ta">Mô tả:</label>
+      {{ form.mo_ta }} {% if form.mo_ta.errors %}
+      <div class="error">{{ form.mo_ta.errors }}</div>
+      {% endif %}
+    </div>
+
+    <div class="form-group">
+      <label for="id_don_vi_tinh">Đơn vị tính:</label>
+      {{ form.don_vi_tinh }} {% if form.don_vi_tinh.errors %}
+      <div class="error">{{ form.don_vi_tinh.errors }}</div>
+      {% endif %}
+    </div>
+
+    <div class="form-actions">
+      <button type="submit" class="btn">Lưu</button>
+      <a href="{% url 'loai_ong_list' %}" class="btn btn-secondary">Hủy</a>
+    </div>
+  </form>
+</div>
+
+<style>
+  .form-container {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  .form-group {
+    margin-bottom: 20px;
+  }
+
+  label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+  }
+
+  input,
+  textarea,
+  select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+  }
+
+  textarea {
+    height: 100px;
+  }
+
+  .error {
+    color: #dc3545;
+    font-size: 0.9em;
+    margin-top: 5px;
+  }
+
+  .form-actions {
+    margin-top: 30px;
+    display: flex;
+    gap: 10px;
+  }
+
+  .btn-secondary {
+    background-color: #6c757d;
+  }
+</style>
+{% endblock %}
