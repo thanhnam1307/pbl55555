@@ -1,72 +1,74 @@
-{% extends 'inventory/base.html' %}
-{% load static %}
-
-{% block title %}Chi Tiết Điều Chỉnh Tồn Kho{% endblock %}
-
-{% block content %}
+{% extends 'inventory/base.html' %} {% load static %} {% block title %}Chi Tiết
+Điều Chỉnh Tồn Kho{% endblock %} {% block content %}
 <div class="container mt-4">
-    <div class="card">
-        <div class="card-header bg-primary text-white">
-            <div class="d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">Chi Tiết Điều Chỉnh Tồn Kho #{{ dieu_chinh.ma_dieu_chinh }}</h5>
-                <a href="{% url 'dieu_chinh_ton_kho' %}" class="btn btn-light">Quay lại</a>
-            </div>
-        </div>
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-6">
-                    <dl class="row">
-                        <dt class="col-sm-4">Mã điều chỉnh:</dt>
-                        <dd class="col-sm-8">{{ dieu_chinh.ma_dieu_chinh }}</dd>
-                        
-                        <dt class="col-sm-4">Ống nước:</dt>
-                        <dd class="col-sm-8">
-                            <a href="{% url 'ong_nuoc_detail' dieu_chinh.ma_ong.ma_ong %}">
-                                {{ dieu_chinh.ma_ong.ten_ong }}
-                            </a>
-                        </dd>
-                        
-                        <dt class="col-sm-4">Loại điều chỉnh:</dt>
-                        <dd class="col-sm-8">
-                            {% if dieu_chinh.loai_dieu_chinh == 'tang' %}
-                                <span class="badge bg-success">Tăng</span>
-                            {% else %}
-                                <span class="badge bg-danger">Giảm</span>
-                            {% endif %}
-                        </dd>
-                        
-                        <dt class="col-sm-4">Số mét:</dt>
-                        <dd class="col-sm-8">{{ dieu_chinh.so_met }}</dd>
-                    </dl>
-                </div>
-                
-                <div class="col-md-6">
-                    <dl class="row">
-                        <dt class="col-sm-4">Số mét trước:</dt>
-                        <dd class="col-sm-8">{{ dieu_chinh.so_met_truoc }}</dd>
-                        
-                        <dt class="col-sm-4">Số mét sau:</dt>
-                        <dd class="col-sm-8">{{ dieu_chinh.so_met_sau }}</dd>
-                        
-                        <dt class="col-sm-4">Ngày điều chỉnh:</dt>
-                        <dd class="col-sm-8">{{ dieu_chinh.ngay_dieu_chinh|date:"d/m/Y H:i" }}</dd>
-                        
-                        <dt class="col-sm-4">Người tạo:</dt>
-                        <dd class="col-sm-8">{{ dieu_chinh.nguoi_tao }}</dd>
-                    </dl>
-                </div>
-            </div>
-            
-            <div class="row mt-3">
-                <div class="col-md-12">
-                    <h6>Lý do:</h6>
-                    <p>{{ dieu_chinh.ly_do|default:"Không có" }}</p>
-                    
-                    <h6>Ghi chú:</h6>
-                    <p>{{ dieu_chinh.ghi_chu|default:"Không có" }}</p>
-                </div>
-            </div>
-        </div>
+  <div class="card">
+    <div class="card-header bg-primary text-white">
+      <div class="d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+          Chi Tiết Điều Chỉnh Tồn Kho #{{ dieu_chinh.ma_dieu_chinh }}
+        </h5>
+        <a href="{% url 'dieu_chinh_ton_kho' %}" class="btn btn-light"
+          >Quay lại</a
+        >
+      </div>
     </div>
+    <div class="card-body">
+      <div class="row">
+        <div class="col-md-6">
+          <dl class="row">
+            <dt class="col-sm-4">Mã điều chỉnh:</dt>
+            <dd class="col-sm-8">{{ dieu_chinh.ma_dieu_chinh }}</dd>
+
+            <dt class="col-sm-4">Ống nước:</dt>
+            <dd class="col-sm-8">
+              <a href="{% url 'ong_nuoc_detail' dieu_chinh.ma_ong.ma_ong %}">
+                {{ dieu_chinh.ma_ong.ten_ong }}
+              </a>
+            </dd>
+
+            <dt class="col-sm-4">Loại điều chỉnh:</dt>
+            <dd class="col-sm-8">
+              {% if dieu_chinh.loai_dieu_chinh == 'tang' %}
+              <span class="badge bg-success">Tăng</span>
+              {% else %}
+              <span class="badge bg-danger">Giảm</span>
+              {% endif %}
+            </dd>
+
+            <dt class="col-sm-4">Số mét:</dt>
+            <dd class="col-sm-8">{{ dieu_chinh.so_met }}</dd>
+          </dl>
+        </div>
+
+        <div class="col-md-6">
+          <dl class="row">
+            <dt class="col-sm-4">Số mét trước:</dt>
+            <dd class="col-sm-8">{{ dieu_chinh.so_met_truoc }}</dd>
+
+            <dt class="col-sm-4">Số mét sau:</dt>
+            <dd class="col-sm-8">{{ dieu_chinh.so_met_sau }}</dd>
+
+            <dt class="col-sm-4">Ngày điều chỉnh:</dt>
+            <dd class="col-sm-8">
+              {{ dieu_chinh.ngay_dieu_chinh|date:"d/m/Y H:i" }}
+            </dd>
+
+            <dt class="col-sm-4">Người tạo:</dt>
+            <dd class="col-sm-8">{{ dieu_chinh.nguoi_tao }}</dd>
+          </dl>
+        </div>
+      </div>
+
+      <div class="row mt-3">
+        <div class="col-md-12">
+          <h6>Lý do:</h6>
+          <p>{{ dieu_chinh.ly_do|default:"Không có" }}</p>
+
+          <h6>Ghi chú:</h6>
+          <p>{{ dieu_chinh.ghi_chu|default:"Không có" }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 {% endblock %}

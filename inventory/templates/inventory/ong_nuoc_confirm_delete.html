@@ -1,49 +1,48 @@
-{% extends 'inventory/base.html' %}
-{% load static %}
-
-{% block title %}Xác Nhận Xoá Ống Nước{% endblock %}
-
-{% block content %}
+{% extends 'inventory/base.html' %} {% load static %} {% block title %}Xác Nhận
+Xoá Ống Nước{% endblock %} {% block content %}
 <div class="container mt-4">
-    <div class="card">
-        <div class="card-header bg-danger text-white">
-            <h5 class="mb-0">Xác Nhận Xoá</h5>
-        </div>
-        <div class="card-body">
-            <h5>Bạn có chắc chắn muốn xoá ống nước: <strong>{{ object.ten_ong }}</strong>?</h5>
-            <div class="alert alert-warning mt-3">
-                <i class="fas fa-exclamation-triangle"></i> 
-                Cảnh báo: Việc xoá ống nước sẽ xoá tất cả dữ liệu liên quan đến ống này, bao gồm lịch sử nhập/xuất.
-                Hành động này không thể hoàn tác.
-            </div>
-            
-            <div class="card mb-3">
-                <div class="card-body">
-                    <h6>Thông tin ống nước:</h6>
-                    <dl class="row">
-                        <dt class="col-sm-3">Tên ống:</dt>
-                        <dd class="col-sm-9">{{ object.ten_ong }}</dd>
-                        
-                        <dt class="col-sm-3">Loại ống:</dt>
-                        <dd class="col-sm-9">{{ object.ma_loai.ten_loai }}</dd>
-                        
-                        <dt class="col-sm-3">Đơn giá:</dt>
-                        <dd class="col-sm-9">{{ object.don_gia|floatformat:0 }} VNĐ</dd>
-                        
-                        <dt class="col-sm-3">Tồn kho:</dt>
-                        <dd class="col-sm-9">{{ object.ton_kho }} mét</dd>
-                    </dl>
-                </div>
-            </div>
-            
-            <form method="post">
-                {% csrf_token %}
-                <div class="mt-4">
-                    <a href="{% url 'ong_nuoc_list' %}" class="btn btn-secondary">Huỷ</a>
-                    <button type="submit" class="btn btn-danger">Xác nhận xoá</button>
-                </div>
-            </form>
-        </div>
+  <div class="card">
+    <div class="card-header bg-danger text-white">
+      <h5 class="mb-0">Xác Nhận Xoá</h5>
     </div>
+    <div class="card-body">
+      <h5>
+        Bạn có chắc chắn muốn xoá ống nước:
+        <strong>{{ object.ten_ong }}</strong>?
+      </h5>
+      <div class="alert alert-warning mt-3">
+        <i class="fas fa-exclamation-triangle"></i>
+        Cảnh báo: Việc xoá ống nước sẽ xoá tất cả dữ liệu liên quan đến ống này,
+        bao gồm lịch sử nhập/xuất. Hành động này không thể hoàn tác.
+      </div>
+
+      <div class="card mb-3">
+        <div class="card-body">
+          <h6>Thông tin ống nước:</h6>
+          <dl class="row">
+            <dt class="col-sm-3">Tên ống:</dt>
+            <dd class="col-sm-9">{{ object.ten_ong }}</dd>
+
+            <dt class="col-sm-3">Loại ống:</dt>
+            <dd class="col-sm-9">{{ object.ma_loai.ten_loai }}</dd>
+
+            <dt class="col-sm-3">Đơn giá:</dt>
+            <dd class="col-sm-9">{{ object.don_gia|floatformat:0 }} VNĐ</dd>
+
+            <dt class="col-sm-3">Tồn kho:</dt>
+            <dd class="col-sm-9">{{ object.ton_kho }} mét</dd>
+          </dl>
+        </div>
+      </div>
+
+      <form method="post">
+        {% csrf_token %}
+        <div class="mt-4">
+          <a href="{% url 'ong_nuoc_list' %}" class="btn btn-secondary">Huỷ</a>
+          <button type="submit" class="btn btn-danger">Xác nhận xoá</button>
+        </div>
+      </form>
+    </div>
+  </div>
 </div>
 {% endblock %}
