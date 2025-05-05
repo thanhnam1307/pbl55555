@@ -1,0 +1,108 @@
+{% extends 'inventory/base.html' %}
+{% load static %}
+
+{% block title %}Điều Chỉnh Tồn Kho{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">Điều Chỉnh Tồn Kho</h1>
+
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Thêm điều chỉnh mới</h5>
+        </div>
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="{{ form.ma_ong.id_for_label }}" class="form-label">Ống nước:</label>
+                        {{ form.ma_ong }}
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <label for="{{ form.loai_dieu_chinh.id_for_label }}" class="form-label">Loại điều chỉnh:</label>
+                        {{ form.loai_dieu_chinh }}
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <label for="{{ form.so_met.id_for_label }}" class="form-label">Số mét:</label>
+                        {{ form.so_met }}
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="{{ form.ly_do.id_for_label }}" class="form-label">Lý do:</label>
+                        {{ form.ly_do }}
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label for="{{ form.ghi_chu.id_for_label }}" class="form-label">Ghi chú:</label>
+                    {{ form.ghi_chu }}
+                </div>
+                <button type="submit" class="btn btn-primary">Lưu điều chỉnh</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header bg-secondary text-white">
+            <h5 class="mb-0">Lịch sử điều chỉnh tồn kho</h5>
+        </div>
+        <div class="card-body">
+            {% if dieu_chinh_list %}
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>Mã điều chỉnh</th>
+                                <th>Ống nước</th>
+                                <th>Loại điều chỉnh</th>
+                                <th>Số mét</th>
+                                <th>Số mét trước</th>
+                                <th>Số mét sau</th>
+                                <th>Ngày điều chỉnh</th>
+                                <th>Người tạo</th>
+                                <th>Chi tiết</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for dieu_chinh in dieu_chinh_list %}
+                                <tr>
+                                    <td>{{ dieu_chinh.ma_dieu_chinh }}</td>
+                                    <td>{{ dieu_chinh.ma_ong.ten_ong }}</td>
+                                    <td>
+                                        {% if dieu_chinh.loai_dieu_chinh == 'tang' %}
+                                            <span class="badge bg-success">Tăng</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Giảm</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ dieu_chinh.so_met }}</td>
+                                    <td>{{ dieu_chinh.so_met_truoc }}</td>
+                                    <td>{{ dieu_chinh.so_met_sau }}</td>
+                                    <td>{{ dieu_chinh.ngay_dieu_chinh|date:"d/m/Y H:i" }}</td>
+                                    <td>{{ dieu_chinh.nguoi_tao }}</td>
+                                    <td>
+                                        <a href="{% url 'dieu_chinh_ton_kho_detail' dieu_chinh.ma_dieu_chinh %}" class="btn btn-sm btn-info">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-muted">Chưa có điều chỉnh tồn kho nào được thực hiện.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Format form elements with Bootstrap classes
+        $('select').addClass('form-select');
+        $('input[type="text"], input[type="number"], textarea').addClass('form-control');
+    });
+</script>
+{% endblock %}

@@ -1,5 +1,5 @@
-{% extends 'inventory/base.html' %} {% block title %}Danh sách Nhà Cung Cấp{%
-endblock %} {% block content %}
+{% extends 'inventory/base.html' %} {% block title %}Danh sách Nhà Cung
+Cấp{%endblock %}{% block content %}
 <div class="page-header">
   <h2>Danh sách Nhà Cung Cấp</h2>
   <a href="{% url 'nha_cung_cap_create' %}" class="btn"
@@ -36,10 +36,7 @@ endblock %} {% block content %}
   </tbody>
 </table>
 {% else %}
-<p>
-  Chưa có nhà cung cấp nào.
-  <a href="{% url 'nha_cung_cap_create' %}">Thêm nhà cung cấp mới</a>.
-</p>
+<p>Chưa có nhà cung cấp nào.</p>
 {% endif %}
 
 <style>

@@ -1,19 +1,32 @@
 from django import forms
 from .models import (
-    Product, LoaiOng, OngNuoc, NhaCungCap, 
+    LoaiOng, OngNuoc, NhaCungCap, 
     KhachHang, PhieuNhap, PhieuXuat, 
     PhieuNhapChiTiet, PhieuXuatChiTiet
 )
 
-# Existing forms
-class ProductForm(forms.ModelForm):
-    class Meta:
-        model = Product
-        fields = ['name', 'diameter', 'length', 'quantity', 'import_date']
-        
+# Cập nhật ImageUploadForm để chỉ sử dụng OngNuoc mới
 class ImageUploadForm(forms.Form):
-    product = forms.ModelChoiceField(queryset=Product.objects.all(), label="Select Product")
-    image = forms.ImageField(label="Upload Warehouse Image")
+    ong_nuoc = forms.ModelChoiceField(
+        queryset=OngNuoc.objects.all(),
+        label='Chọn ống nước',
+        required=True,
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+    
+    image = forms.ImageField(
+        label='Tải lên hình ảnh',
+        widget=forms.FileInput(attrs={'class': 'form-control'})
+    )
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        ong_nuoc = cleaned_data.get('ong_nuoc')
+        
+        if not ong_nuoc:
+            self.add_error('ong_nuoc', 'Vui lòng chọn ống nước.')
+        
+        return cleaned_data
 
 # New forms for warehouse pipe management models
 class LoaiOngForm(forms.ModelForm):

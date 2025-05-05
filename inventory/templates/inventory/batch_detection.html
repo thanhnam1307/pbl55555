@@ -1,0 +1,116 @@
+{% extends 'base.html' %} {% block title %}Phát hiện ống nước hàng loạt{%
+endblock %} {% block content %}
+<div class="container mt-4">
+  <h2 class="mb-4">Phát hiện ống nước hàng loạt</h2>
+
+  <div class="card mb-4">
+    <div class="card-header">
+      <h5>Chọn hình ảnh và loại ống nước</h5>
+    </div>
+    <div class="card-body">
+      <form method="post" action="{% url 'batch_pipe_detection' %}">
+        {% csrf_token %}
+
+        <div class="form-group mb-3">
+          <label for="ong_nuoc_id">Loại ống nước:</label>
+          <select
+            class="form-control"
+            id="ong_nuoc_id"
+            name="ong_nuoc_id"
+            required
+          >
+            <option value="">-- Chọn loại ống nước --</option>
+            {% for pipe in pipe_types %}
+            <option value="{{ pipe.id }}">
+              {{ pipe.ten_ong }} ({{ pipe.loai_ong.ten_loai }})
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group mb-3">
+          <label for="note">Ghi chú:</label>
+          <textarea
+            class="form-control"
+            id="note"
+            name="note"
+            rows="3"
+            placeholder="Nhập ghi chú cho đợt phát hiện này..."
+          ></textarea>
+        </div>
+
+        <div class="form-group mb-3">
+          <label>Chọn hình ảnh để phân tích:</label>
+          <div class="row mt-2">
+            {% for image in images %}
+            <div class="col-md-3 mb-4">
+              <div class="card">
+                <img
+                  src="{{ image.url }}"
+                  class="card-img-top"
+                  alt="{{ image.name }}"
+                  style="height: 150px; object-fit: cover"
+                />
+                <div class="card-body text-center">
+                  <div class="form-check">
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      name="selected_images"
+                      value="{{ image.path }}"
+                      id="img-{{ forloop.counter }}"
+                    />
+                    <label
+                      class="form-check-label"
+                      for="img-{{ forloop.counter }}"
+                    >
+                      {{ image.name|truncatechars:20 }}
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="text-center mt-4">
+          <button type="submit" class="btn btn-primary">
+            Phân tích hình ảnh
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %} {% block extra_js %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // Hỗ trợ chọn tất cả các hình ảnh
+    const selectAllBtn = document.getElementById("select-all-images");
+    if (selectAllBtn) {
+      selectAllBtn.addEventListener("click", function () {
+        const checkboxes = document.querySelectorAll(
+          'input[name="selected_images"]'
+        );
+        checkboxes.forEach((checkbox) => {
+          checkbox.checked = true;
+        });
+      });
+    }
+
+    // Hỗ trợ xóa tất cả lựa chọn
+    const clearAllBtn = document.getElementById("clear-all-images");
+    if (clearAllBtn) {
+      clearAllBtn.addEventListener("click", function () {
+        const checkboxes = document.querySelectorAll(
+          'input[name="selected_images"]'
+        );
+        checkboxes.forEach((checkbox) => {
+          checkbox.checked = false;
+        });
+      });
+    }
+  });
+</script>
+{% endblock %}

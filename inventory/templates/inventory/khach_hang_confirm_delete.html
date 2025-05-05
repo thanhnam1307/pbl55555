@@ -1,0 +1,12 @@
+{% extends 'inventory/base.html' %} {% block title %}Xóa Khách Hàng - Warehouse
+AI{% endblock %} {% block content %}
+<h2>Xóa Khách Hàng</h2>
+
+<p>Bạn có chắc chắn muốn xóa khách hàng "{{ khach_hang.ten_kh }}"?</p>
+
+<form method="post">
+  {% csrf_token %}
+  <button type="submit" class="btn btn-danger">Có, Xóa</button>
+  <a href="{% url 'khach_hang_list' %}" class="btn">Hủy bỏ</a>
+</form>
+{% endblock %}

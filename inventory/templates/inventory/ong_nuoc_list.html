@@ -1,5 +1,5 @@
-{% extends 'inventory/base.html' %} {% block title %}Danh sách Ống Nước{%
-endblock %} {% block content %}
+{% extends 'inventory/base.html' %}{% block title %}Danh sách Ống
+Nước{%endblock%} {% block content %}
 <div class="page-header">
   <h2>Danh sách Ống Nước</h2>
   <a href="{% url 'ong_nuoc_create' %}" class="btn">Thêm Ống Nước Mới</a>
@@ -48,10 +48,7 @@ endblock %} {% block content %}
   </tbody>
 </table>
 {% else %}
-<p>
-  Chưa có ống nước nào.
-  <a href="{% url 'ong_nuoc_create' %}">Thêm ống nước mới</a>.
-</p>
+<p>Chưa có ống nước nào.</p>
 {% endif %}
 
 <style>

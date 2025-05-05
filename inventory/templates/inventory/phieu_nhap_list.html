@@ -1,5 +1,5 @@
-{% extends 'inventory/base.html' %} {% block title %}Danh sách Phiếu Nhập{%
-endblock %} {% block content %}
+{% extends 'inventory/base.html' %} {% block title %} Danh sách Phiếu Nhập
+{%endblock %} {% block content %}
 <div class="page-header">
   <h2>Danh sách Phiếu Nhập</h2>
   <a href="{% url 'phieu_nhap_create' %}" class="btn">Tạo Phiếu Nhập Mới</a>
@@ -49,10 +49,7 @@ endblock %} {% block content %}
   </tbody>
 </table>
 {% else %}
-<p>
-  Chưa có phiếu nhập nào.
-  <a href="{% url 'phieu_nhap_create' %}">Tạo phiếu nhập mới</a>.
-</p>
+<p>Chưa có phiếu nhập nào.</p>
 {% endif %}
 
 <style>

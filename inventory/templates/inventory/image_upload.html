@@ -24,8 +24,8 @@ AI{% endblock %} {% block content %}
       <input type="hidden" name="source" value="upload" />
 
       <div class="form-group">
-        <label for="id_product">Chọn loại sản phẩm:</label>
-        {{ form.product }}
+        <label for="id_ong_nuoc">Chọn loại sản phẩm:</label>
+        {{ form.ong_nuoc }}
       </div>
 
       <div class="form-group">
@@ -37,7 +37,7 @@ AI{% endblock %} {% block content %}
         <button type="submit" class="btn btn-success">
           Tải lên và phân tích
         </button>
-        <a href="{% url 'product_list' %}" class="btn btn-secondary">Hủy bỏ</a>
+        <a href="{% url 'ong_nuoc_list' %}" class="btn btn-secondary">Hủy bỏ</a>
       </div>
     </form>
   </div>
@@ -49,8 +49,10 @@ AI{% endblock %} {% block content %}
     <div class="form-group">
       <label for="camera-product">Chọn loại sản phẩm:</label>
       <select id="camera-product" class="form-control">
-        {% for product in all_products %}
-        <option value="{{ product.id }}">{{ product.name }}</option>
+        {% for ong in all_ong_nuoc %}
+        <option value="{{ ong.id }}">
+          {{ ong.ten_ong }} - {{ ong.kich_thuoc }}
+        </option>
         {% endfor %}
       </select>
     </div>
@@ -96,7 +98,7 @@ AI{% endblock %} {% block content %}
     >
       {% csrf_token %}
       <input type="hidden" name="source" value="camera" />
-      <input type="hidden" name="product_id" id="hidden-product-id" />
+      <input type="hidden" name="ong_nuoc_id" id="hidden-product-id" />
       <input type="hidden" name="camera_image" id="camera-image-data" />
     </form>
   </div>
@@ -129,13 +131,14 @@ AI{% endblock %} {% block content %}
           <div class="detection-unit">ống nước</div>
         </div>
         <p class="database-update">
-          Số lượng sản phẩm <strong>{{ product.name }}</strong> đã được cập nhật
-          trong cơ sở dữ liệu.
+          Số lượng sản phẩm
+          <strong>{{ ong_nuoc.ten_ong }} - {{ ong_nuoc.kich_thuoc }}</strong> đã
+          được cập nhật trong cơ sở dữ liệu.
         </p>
       </div>
 
       <div class="result-actions">
-        <a href="{% url 'product_list' %}" class="btn btn-success"
+        <a href="{% url 'ong_nuoc_list' %}" class="btn btn-success"
           >Xem danh sách sản phẩm</a
         >
         <a href="{% url 'upload_image' %}" class="btn btn-primary"

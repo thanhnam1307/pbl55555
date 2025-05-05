@@ -1,0 +1,262 @@
+{% extends 'base.html' %}
+
+{% block title %}Thống kê phát hiện ống nước{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.css">
+<style>
+    .stats-card {
+        transition: transform 0.3s;
+    }
+    .stats-card:hover {
+        transform: translateY(-5px);
+    }
+    .chart-container {
+        position: relative;
+        height: 300px;
+        margin-bottom: 2rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">Thống kê phát hiện ống nước</h2>
+    
+    <!-- Filter Controls -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5>Bộ lọc</h5>
+        </div>
+        <div class="card-body">
+            <form method="get" action="{% url 'pipe_analytics_dashboard' %}">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="form-group mb-3">
+                            <label for="date_range">Khoảng thời gian:</label>
+                            <select class="form-control" id="date_range" name="date_range">
+                                <option value="7" {% if date_range == '7' %}selected{% endif %}>7 ngày qua</option>
+                                <option value="30" {% if date_range == '30' %}selected{% endif %}>30 ngày qua</option>
+                                <option value="90" {% if date_range == '90' %}selected{% endif %}>3 tháng qua</option>
+                                <option value="180" {% if date_range == '180' %}selected{% endif %}>6 tháng qua</option>
+                                <option value="365" {% if date_range == '365' %}selected{% endif %}>1 năm qua</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group mb-3">
+                            <label for="pipe_type">Loại ống:</label>
+                            <select class="form-control" id="pipe_type" name="pipe_type">
+                                <option value="">Tất cả loại ống</option>
+                                {% for pipe in all_pipes %}
+                                <option value="{{ pipe.id }}" {% if pipe_type|stringformat:"s" == pipe.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ pipe.ten_ong }} ({{ pipe.loai_ong.ten_loai }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary mb-3 w-100">Áp dụng bộ lọc</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card stats-card bg-primary text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Tổng số ống đã phát hiện</h5>
+                    <h2 class="display-4">{{ total_pipes }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stats-card bg-success text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Số lần phát hiện</h5>
+                    <h2 class="display-4">{{ total_detections }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stats-card bg-info text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Trung bình ống/lần</h5>
+                    <h2 class="display-4">{{ avg_pipes_per_detection|floatformat:1 }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stats-card bg-warning text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Số lượng lớn nhất</h5>
+                    <h2 class="display-4">{{ max_pipes }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Charts -->
+    <div class="row">
+        <div class="col-md-7">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5>Số lượng ống theo thời gian</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="timeSeriesChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-5">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5>Phân phối loại ống</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="pipeDistributionChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Detections Table -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5>Phát hiện gần đây</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Thời gian</th>
+                            <th>Loại ống</th>
+                            <th>Số lượng</th>
+                            <th>Ghi chú</th>
+                            <th>Hình ảnh</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for detection in recent_detections %}
+                        <tr>
+                            <td>{{ detection.thoi_gian|date:"d/m/Y H:i" }}</td>
+                            <td>{{ detection.ong_nuoc.ten_ong }}</td>
+                            <td>{{ detection.so_luong }}</td>
+                            <td>{{ detection.ghi_chu|default:"-" }}</td>
+                            <td>
+                                {% if detection.hinh_anh %}
+                                <a href="{{ detection.hinh_anh.url }}" target="_blank">
+                                    <img src="{{ detection.hinh_anh.url }}" alt="Ảnh phát hiện" style="width: 50px; height: 50px; object-fit: cover;">
+                                </a>
+                                {% else %}
+                                <span class="text-muted">Không có ảnh</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center">Không có dữ liệu phát hiện</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Time Series Chart
+    const timeSeriesCtx = document.getElementById('timeSeriesChart').getContext('2d');
+    new Chart(timeSeriesCtx, {
+        type: 'line',
+        data: {
+            labels: {{ time_labels|safe }},
+            datasets: [{
+                label: 'Số lượng ống',
+                data: {{ time_series_data|safe }},
+                backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 2,
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Số lượng ống'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Ngày'
+                    }
+                }
+            }
+        }
+    });
+    
+    // Pipe Distribution Chart
+    const distributionCtx = document.getElementById('pipeDistributionChart').getContext('2d');
+    new Chart(distributionCtx, {
+        type: 'pie',
+        data: {
+            labels: {{ pipe_distribution_labels|safe }},
+            datasets: [{
+                data: {{ pipe_distribution_data|safe }},
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.7)',
+                    'rgba(54, 162, 235, 0.7)',
+                    'rgba(255, 206, 86, 0.7)',
+                    'rgba(75, 192, 192, 0.7)',
+                    'rgba(153, 102, 255, 0.7)',
+                    'rgba(255, 159, 64, 0.7)',
+                    'rgba(199, 199, 199, 0.7)',
+                    'rgba(83, 102, 255, 0.7)',
+                    'rgba(40, 159, 64, 0.7)',
+                    'rgba(210, 199, 199, 0.7)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'right',
+                }
+            }
+        }
+    });
+    
+    // Auto-submit form when changing filters
+    document.getElementById('date_range').addEventListener('change', function() {
+        this.form.submit();
+    });
+    
+    document.getElementById('pipe_type').addEventListener('change', function() {
+        this.form.submit();
+    });
+});
+</script>
+{% endblock %}

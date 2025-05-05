@@ -10,7 +10,8 @@ import sys
 import json
 import base64
 from datetime import datetime, timedelta
-from .models import Product, WaterPipeCountHistory
+from pytz import timezone as pytz_timezone
+from .models import WaterPipeCountHistory, OngNuoc
 
 # Thêm đường dẫn đến thư mục pipe-ai để có thể import các module từ đó
 sys.path.append(os.path.join(settings.BASE_DIR, 'pipe-ai'))
@@ -37,7 +38,7 @@ def detect_pipes_api(request):
     
     POST param:
         - image_path: Đường dẫn đến hình ảnh (tương đối với MEDIA_ROOT)
-        - product_id: ID của sản phẩm cần cập nhật số lượng (tùy chọn)
+        - ong_nuoc_id: ID của ống nước cần cập nhật số lượng (tùy chọn)
         - note: Ghi chú về lần phát hiện này (tùy chọn)
     
     Trả về:
@@ -51,7 +52,7 @@ def detect_pipes_api(request):
     try:
         data = json.loads(request.body)
         image_path = data.get('image_path', '')
-        product_id = data.get('product_id', None)
+        ong_nuoc_id = data.get('ong_nuoc_id', None)
         note = data.get('note', None)
         
         # Kiểm tra đường dẫn hình ảnh
@@ -94,62 +95,44 @@ def detect_pipes_api(request):
         output_image_path = os.path.join(output_dir, output_image_name)
         cv2.imwrite(output_image_path, image)
         
-        # Nếu có product_id, cập nhật số lượng
-        product = None
-        if product_id:
+        # Nếu có ong_nuoc_id, cập nhật số lượng
+        ong_nuoc = None
+        if ong_nuoc_id:
             try:
-                product = Product.objects.get(id=product_id)
-                product.quantity = pipe_count
-                product.save()
-            except Product.DoesNotExist:
+                ong_nuoc = OngNuoc.objects.get(ma_ong=ong_nuoc_id)
+                ong_nuoc.so_met_ton = ong_nuoc.so_met_ton + pipe_count
+                ong_nuoc.save()
+            except OngNuoc.DoesNotExist:
                 return JsonResponse({
                     'status': 'error',
-                    'message': f'Không tìm thấy sản phẩm với ID {product_id}'
+                    'message': f'Không tìm thấy ống nước với ID: {ong_nuoc_id}'
                 })
         
-        # Lưu kết quả phát hiện vào lịch sử
-        history_record = WaterPipeCountHistory(
-            count=pipe_count,
-            notes=note
-        )
+        # Lưu lịch sử đếm ống nước
+        relative_path = image_path
+        processed_relative_path = f"processed_images/{output_image_name}"
         
-        if product:
-            history_record.product = product
-        
-        # Lưu hình ảnh gốc và hình ảnh đã xử lý
-        from django.core.files.base import ContentFile
-        
-        # Lưu hình ảnh gốc vào bản ghi lịch sử
-        with open(full_image_path, 'rb') as f:
-            original_image_content = f.read()
-            image_filename = os.path.basename(full_image_path)
-            history_record.original_image.save(
-                f'history_original_{image_filename}', 
-                ContentFile(original_image_content)
+        if ong_nuoc:
+            history = WaterPipeCountHistory(
+                ong_nuoc=ong_nuoc,
+                count=pipe_count,
+                original_image=relative_path,
+                processed_image=processed_relative_path,
+                notes=note
             )
+            history.save()
         
-        # Lưu hình ảnh đã xử lý vào bản ghi lịch sử
-        with open(output_image_path, 'rb') as f:
-            processed_image_content = f.read()
-            history_record.processed_image.save(
-                f'history_processed_{image_filename}', 
-                ContentFile(processed_image_content)
-            )
-        
-        history_record.save()
-        
-        # Trả về kết quả
         return JsonResponse({
             'status': 'success',
             'count': pipe_count,
-            'processed_image': f'processed_images/{output_image_name}',
-            'history_id': history_record.id
+            'processed_image': f"/media/{processed_relative_path}",
+            'message': f'Đã phát hiện {pipe_count} ống nước.'
         })
         
     except Exception as e:
         return JsonResponse({
             'status': 'error',
-            'message': f'Lỗi khi xử lý hình ảnh: {str(e)}'
+            'message': f'Lỗi xử lý: {str(e)}'
         })
 
 @csrf_exempt
@@ -158,7 +141,7 @@ def history_api(request):
     API endpoint để lấy lịch sử phát hiện ống nước.
     
     GET params:
-        - product_id: Lọc theo ID sản phẩm (tùy chọn)
+        - ong_nuoc_id: Lọc theo ID ống nước (tùy chọn)
         - start_date: Lọc từ ngày (định dạng YYYY-MM-DD, tùy chọn)
         - end_date: Lọc đến ngày (định dạng YYYY-MM-DD, tùy chọn)
     
@@ -170,16 +153,16 @@ def history_api(request):
     
     try:
         # Lấy tham số từ query
-        product_id = request.GET.get('product_id', None)
+        ong_nuoc_id = request.GET.get('ong_nuoc_id', None)
         start_date_str = request.GET.get('start_date', None)
         end_date_str = request.GET.get('end_date', None)
         
         # Khởi tạo QuerySet
         history_records = WaterPipeCountHistory.objects.all().order_by('-timestamp')
         
-        # Lọc theo product_id nếu có
-        if product_id:
-            history_records = history_records.filter(product_id=product_id)
+        # Lọc theo ong_nuoc_id nếu có
+        if ong_nuoc_id:
+            history_records = history_records.filter(ong_nuoc_id=ong_nuoc_id)
         
         # Lọc theo ngày bắt đầu nếu có
         if start_date_str:
@@ -207,22 +190,25 @@ def history_api(request):
         
         # Chuẩn bị dữ liệu để trả về
         history_data = []
+        vietnam_tz = pytz_timezone('Asia/Ho_Chi_Minh')
+        
         for record in history_records:
-            history_item = {
+            # Convert timestamp to Vietnam timezone
+            vietnam_time = record.timestamp.astimezone(vietnam_tz)
+            formatted_time = vietnam_time.strftime('%Y-%m-%d %H:%M:%S')
+            
+            # Get the ong_nuoc name if available
+            ong_nuoc_name = record.ong_nuoc.ten_ong if record.ong_nuoc else "Unknown"
+            
+            history_data.append({
                 'id': record.id,
-                'count': record.count,
-                'timestamp': record.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
-                'notes': record.notes,
-                'original_image': record.original_image.url if record.original_image else None,
-                'processed_image': record.processed_image.url if record.processed_image else None,
-                'product': {
-                    'id': record.product.id,
-                    'name': record.product.name,
-                    'diameter': record.product.diameter,
-                    'length': record.product.length
-                } if record.product else None
-            }
-            history_data.append(history_item)
+                'timestamp': formatted_time,
+                'ong_nuoc_id': record.ong_nuoc.id if record.ong_nuoc else None,
+                'ong_nuoc_name': ong_nuoc_name,
+                'pipe_count': record.pipe_count,
+                'image_path': record.image_path,
+                'image_url': request.build_absolute_uri(record.image_path) if record.image_path else None,
+            })
         
         return JsonResponse({
             'status': 'success',
@@ -230,10 +216,7 @@ def history_api(request):
         })
         
     except Exception as e:
-        return JsonResponse({
-            'status': 'error',
-            'message': f'Lỗi khi lấy dữ liệu lịch sử: {str(e)}'
-        })
+        return JsonResponse({'status': 'error', 'message': str(e)})
 
 @csrf_exempt
 def dashboard_stats_api(request):
@@ -278,16 +261,16 @@ def dashboard_stats_api(request):
         total_detections = history_records.count()
         
         # Số lượng loại ống khác nhau
-        pipe_types_count = Product.objects.count()
+        pipe_types_count = OngNuoc.objects.count()
         
         # Số lượng ống theo loại sản phẩm
         pipes_by_type = {}
         for record in history_records:
-            if record.product:
-                product_name = record.product.name
-                if product_name not in pipes_by_type:
-                    pipes_by_type[product_name] = 0
-                pipes_by_type[product_name] += record.count
+            if record.ong_nuoc:
+                ong_name = record.ong_nuoc.ten_ong
+                if ong_name not in pipes_by_type:
+                    pipes_by_type[ong_name] = 0
+                pipes_by_type[ong_name] += record.count
         
         # Số lượng ống theo ngày
         from django.db.models import Sum
@@ -314,24 +297,26 @@ def dashboard_stats_api(request):
         threshold = 10
         low_stock_warnings = []
         
-        for product in Product.objects.all():
-            if product.quantity < threshold:
+        for product in OngNuoc.objects.all():
+            if product.so_met_ton < threshold:
                 low_stock_warnings.append({
                     'id': product.id,
-                    'name': product.name,
-                    'quantity': product.quantity,
+                    'name': product.ten_ong,
+                    'quantity': product.so_met_ton,
                     'threshold': threshold
                 })
         
         # Lấy 5 lần phát hiện gần đây nhất
         recent_detections = []
+        vietnam_tz = pytz_timezone('Asia/Ho_Chi_Minh')
         for record in history_records.order_by('-timestamp')[:5]:
+            local_timestamp = record.timestamp.astimezone(vietnam_tz)
             detection_data = {
                 'id': record.id,
                 'count': record.count,
-                'timestamp': record.timestamp.strftime('%d/%m/%Y %H:%M'),
-                'product_name': record.product.name if record.product else 'Không xác định',
-                'product_id': record.product.id if record.product else None
+                'timestamp': local_timestamp.strftime('%d/%m/%Y %H:%M'),
+                'product_name': record.ong_nuoc.ten_ong if record.ong_nuoc else 'Không xác định',
+                'product_id': record.ong_nuoc.id if record.ong_nuoc else None
             }
             recent_detections.append(detection_data)
         

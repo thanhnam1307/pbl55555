@@ -1,0 +1,214 @@
+{% extends "inventory/base.html" %} {% load static %} {% block title %}Báo cáo
+tổng quan{% endblock %} {% block content %}
+<div class="container-fluid p-4">
+  <h2 class="mb-4">Báo cáo tổng quan</h2>
+
+  <div class="row">
+    <!-- Tổng quan thống kê -->
+    <div class="col-md-12 mb-4">
+      <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+          <h5 class="mb-0">Thống kê chung</h5>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-3 mb-3">
+              <div class="card bg-light">
+                <div class="card-body text-center">
+                  <h3 class="display-4">{{ so_loai_ong }}</h3>
+                  <p class="text-muted">Loại ống</p>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-3 mb-3">
+              <div class="card bg-light">
+                <div class="card-body text-center">
+                  <h3 class="display-4">{{ so_ong_nuoc }}</h3>
+                  <p class="text-muted">Sản phẩm ống nước</p>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-3 mb-3">
+              <div class="card bg-light">
+                <div class="card-body text-center">
+                  <h3 class="display-4">{{ so_nha_cung_cap }}</h3>
+                  <p class="text-muted">Nhà cung cấp</p>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-3 mb-3">
+              <div class="card bg-light">
+                <div class="card-body text-center">
+                  <h3 class="display-4">{{ so_khach_hang }}</h3>
+                  <p class="text-muted">Khách hàng</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="row mt-3">
+            <div class="col-md-6 mb-3">
+              <div class="card bg-light">
+                <div class="card-body text-center">
+                  <h3 class="display-4">{{ so_phieu_nhap }}</h3>
+                  <p class="text-muted">Phiếu nhập</p>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6 mb-3">
+              <div class="card bg-light">
+                <div class="card-body text-center">
+                  <h3 class="display-4">{{ so_phieu_xuat }}</h3>
+                  <p class="text-muted">Phiếu xuất</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="row mt-3">
+            <div class="col-md-12">
+              <div class="card bg-light">
+                <div class="card-body text-center">
+                  <h3 class="display-4">
+                    {{ tong_gia_tri_ton_kho|floatformat:0 }} VNĐ
+                  </h3>
+                  <p class="text-muted">Tổng giá trị tồn kho</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sản phẩm sắp hết hàng -->
+    <div class="col-md-6 mb-4">
+      <div class="card shadow">
+        <div class="card-header bg-warning">
+          <h5 class="mb-0">Sản phẩm sắp hết hàng (< 10 mét)</h5>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th>Tên sản phẩm</th>
+                  <th>Số mét tồn</th>
+                  <th>Giá bán</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for ong in san_pham_sap_het %}
+                <tr>
+                  <td>{{ ong.ten_ong }}</td>
+                  <td>{{ ong.so_met_ton }} m</td>
+                  <td>{{ ong.gia_ban|floatformat:0 }} VNĐ</td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="3" class="text-center">
+                    Không có sản phẩm nào sắp hết hàng
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phiếu nhập gần đây -->
+    <div class="col-md-6 mb-4">
+      <div class="card shadow">
+        <div class="card-header bg-info text-white">
+          <h5 class="mb-0">Phiếu nhập gần đây</h5>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th>Mã phiếu</th>
+                  <th>Ngày nhập</th>
+                  <th>Nhà cung cấp</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for phieu in phieu_nhap_gan_day %}
+                <tr>
+                  <td>PN{{ phieu.ma_phieu_nhap }}</td>
+                  <td>{{ phieu.ngay_nhap|date:"d/m/Y" }}</td>
+                  <td>{{ phieu.ma_ncc.ten_ncc }}</td>
+                  <td>
+                    <a
+                      href="{% url 'phieu_nhap_detail' phieu.ma_phieu_nhap %}"
+                      class="btn btn-sm btn-info"
+                    >
+                      Chi tiết
+                    </a>
+                  </td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="4" class="text-center">
+                    Không có phiếu nhập nào
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phiếu xuất gần đây -->
+    <div class="col-md-6 mb-4">
+      <div class="card shadow">
+        <div class="card-header bg-success text-white">
+          <h5 class="mb-0">Phiếu xuất gần đây</h5>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th>Mã phiếu</th>
+                  <th>Ngày xuất</th>
+                  <th>Khách hàng</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for phieu in phieu_xuat_gan_day %}
+                <tr>
+                  <td>PX{{ phieu.ma_phieu_xuat }}</td>
+                  <td>{{ phieu.ngay_xuat|date:"d/m/Y" }}</td>
+                  <td>{{ phieu.ma_kh.ten_kh }}</td>
+                  <td>
+                    <a
+                      href="{% url 'phieu_xuat_detail' phieu.ma_phieu_xuat %}"
+                      class="btn btn-sm btn-success"
+                    >
+                      Chi tiết
+                    </a>
+                  </td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="4" class="text-center">
+                    Không có phiếu xuất nào
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

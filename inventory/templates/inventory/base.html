@@ -563,23 +563,14 @@
         </li>
         <li>
           <a
-            href="{% url 'product_list' %}"
-            class="{% if request.path == '/' %}active{% endif %}"
+            href="{% url 'warehouse_dashboard' %}"
+            class="{% if request.path == '/warehouse-dashboard/' %}active{% endif %}"
           >
-            <div class="icon"><i class="fas fa-water"></i></div>
-            <span class="menu-text">Danh sách ống nước</span>
+            <div class="icon"><i class="fas fa-warehouse"></i></div>
+            <span class="menu-text">Quản lý kho</span>
           </a>
         </li>
-        <!-- New sidebar items -->
-        <li>
-          <a
-            href="{% url 'loai_ong_list' %}"
-            class="{% if '/loai-ong/' in request.path %}active{% endif %}"
-          >
-            <div class="icon"><i class="fas fa-list"></i></div>
-            <span class="menu-text">Loại ống</span>
-          </a>
-        </li>
+        <!-- Tổ chức lại menu quản lý ống nước -->
         <li>
           <a
             href="{% url 'ong_nuoc_list' %}"
@@ -587,6 +578,15 @@
           >
             <div class="icon"><i class="fas fa-tint"></i></div>
             <span class="menu-text">Ống nước</span>
+          </a>
+        </li>
+        <li>
+          <a
+            href="{% url 'loai_ong_list' %}"
+            class="{% if '/loai-ong/' in request.path %}active{% endif %}"
+          >
+            <div class="icon"><i class="fas fa-list"></i></div>
+            <span class="menu-text">Danh mục ống</span>
           </a>
         </li>
         <li>
@@ -637,20 +637,11 @@
         </li>
         <li>
           <a
-            href="#"
-            class="{% if request.path == '/reports/' %}active{% endif %}"
+            href="{% url 'bao_cao_tong_quan' %}"
+            class="{% if '/bao-cao/' in request.path %}active{% endif %}"
           >
             <div class="icon"><i class="fas fa-chart-bar"></i></div>
             <span class="menu-text">Báo cáo</span>
-          </a>
-        </li>
-        <li>
-          <a
-            href="{% url 'product_create' %}"
-            class="{% if request.path == '/create/' %}active{% endif %}"
-          >
-            <div class="icon"><i class="fas fa-plus-circle"></i></div>
-            <span class="menu-text">Thêm mới</span>
           </a>
         </li>
         <li>
@@ -878,3 +869,4 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   </body>
 </html>
+`
