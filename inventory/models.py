@@ -140,3 +140,21 @@ class PhieuXuatChiTiet(models.Model):
     class Meta:
         verbose_name = "Chi Tiết Phiếu Xuất"
         verbose_name_plural = "Chi Tiết Phiếu Xuất"
+
+# Model để điều chỉnh tồn kho (inventory adjustment)
+class DieuChinhTonKho(models.Model):
+    ma_dieu_chinh = models.AutoField(primary_key=True)
+    ma_ong = models.ForeignKey(OngNuoc, on_delete=models.CASCADE, related_name='dieu_chinh_ton_kho')
+    ngay_dieu_chinh = models.DateField(default=timezone.now)
+    so_luong_cu = models.DecimalField(max_digits=10, decimal_places=2)
+    so_luong_moi = models.DecimalField(max_digits=10, decimal_places=2)
+    ly_do = models.TextField()
+    nguoi_tao = models.CharField(max_length=100)
+    ghi_chu = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return f"ĐCTK-{self.ma_dieu_chinh} - {self.ma_ong.ten_ong}"
+    
+    class Meta:
+        verbose_name = "Điều Chỉnh Tồn Kho"
+        verbose_name_plural = "Điều Chỉnh Tồn Kho"

@@ -2,7 +2,8 @@ from django import forms
 from .models import (
     LoaiOng, OngNuoc, NhaCungCap, 
     KhachHang, PhieuNhap, PhieuXuat, 
-    PhieuNhapChiTiet, PhieuXuatChiTiet
+    PhieuNhapChiTiet, PhieuXuatChiTiet,
+    DieuChinhTonKho
 )
 
 # Cập nhật ImageUploadForm để chỉ sử dụng OngNuoc mới
@@ -150,6 +151,28 @@ class PhieuXuatChiTietForm(forms.ModelForm):
             'ma_ong': 'Ống nước',
             'so_luong': 'Số lượng',
             'don_gia': 'Đơn giá',
+        }
+
+# Form for inventory adjustment
+class DieuChinhTonKhoForm(forms.ModelForm):
+    class Meta:
+        model = DieuChinhTonKho
+        fields = ['ma_ong', 'ngay_dieu_chinh', 'so_luong_cu', 'so_luong_moi', 'ly_do', 'nguoi_tao', 'ghi_chu']
+        widgets = {
+            'ngay_dieu_chinh': forms.DateInput(attrs={'type': 'date'}),
+            'so_luong_cu': forms.NumberInput(attrs={'readonly': 'readonly', 'step': '0.01'}),
+            'so_luong_moi': forms.NumberInput(attrs={'step': '0.01'}),
+            'ly_do': forms.Textarea(attrs={'rows': 3}),
+            'ghi_chu': forms.Textarea(attrs={'rows': 2}),
+        }
+        labels = {
+            'ma_ong': 'Ống nước',
+            'ngay_dieu_chinh': 'Ngày điều chỉnh',
+            'so_luong_cu': 'Số lượng hiện tại',
+            'so_luong_moi': 'Số lượng mới',
+            'ly_do': 'Lý do điều chỉnh',
+            'nguoi_tao': 'Người thực hiện',
+            'ghi_chu': 'Ghi chú',
         }
 
 # Search forms
